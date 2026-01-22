@@ -1,11 +1,23 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
+import Bouton from "../components/Bouton.astro";
 
 // Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
 // Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
-
 <Layout>
-	<Welcome />
+<section>
+  <h2>Nos Services</h2>
+  <p>Découvrez nos offres principales</p>
+</section>
+
+<section>
+  <h3>À propos</h3>
+  <p>UniMates est une plateforme collaborative pour étudiants.</p>
+  <Bouton text="En savoir plus" url="/about" variant="beige" />
+</section>
+
+<footer>
+  <p>&copy; 2024 UniMates. Tous droits réservés.</p>
+</footer>
 </Layout>
