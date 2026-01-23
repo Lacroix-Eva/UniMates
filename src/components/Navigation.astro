@@ -1,0 +1,32 @@
+---
+const menuItems = [
+  { label: "Accueil", href: "/", icon: "🏠" },
+  { label: "Historique", href: "/historique", icon: "😊" },
+  { label: "Stats", href: "/stats", icon: "🦆" },
+  { label: "Ressources", href: "/ressources", icon: "💬" },
+  { label: "Profil", href: "/profile", icon: "👤" },
+];
+---
+
+<nav
+  class="fixed bottom-0 left-0 right-0 z-50 pb-2
+         bg-white border-t border-base-300
+         shadow-md"
+>
+  <ul class="flex justify-around items-center py-3">
+    {
+      menuItems.map((item) => (
+        <li>
+          <a
+            href={item.href}
+            class="flex flex-col items-center gap-1
+                 text-sm text-base-content"
+          >
+            <span class="text-xl">{item.icon}</span>
+            <span>{item.label}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>

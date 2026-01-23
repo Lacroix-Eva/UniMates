@@ -44,12 +44,12 @@
 @theme {
     /* font */
     --font-jua: 'Jua', sans-serif;
-    --font-kantumruy: 'Kantumruy', sans-serif;
+    --font-kantumruy-pro: 'Kantumruy Pro', sans-serif;
 }
 
 @layer base {
     body {
-        @apply font-kantumruy text-base-content bg-base-100;
+        @apply font-kantumruy-pro text-base-content bg-base-100 mx-7 flex flex-col items-center;
     }
 
     h1,
@@ -60,7 +60,7 @@
     }
 
     h1 {
-        @apply text-center text-4xl md:text-5xl lg:text-7xl font-semibold;
+        @apply text-center text-5xl font-semibold;
 
     }
 
@@ -77,6 +77,6 @@
     }
 
     p {
-        @apply text-base lg:text-xl;
+        @apply font-kantumruy-pro text-base lg:text-xl text-center;
     }
 }

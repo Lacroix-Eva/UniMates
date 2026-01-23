@@ -1,23 +1,47 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import "../styles/global.css";
 import Bouton from "../components/Bouton.astro";
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
-<Layout>
-<section>
-  <h2>Nos Services</h2>
-  <p>Découvrez nos offres principales</p>
-</section>
 
-<section>
-  <h3>À propos</h3>
-  <p>UniMates est une plateforme collaborative pour étudiants.</p>
-  <Bouton text="En savoir plus" url="/about" variant="beige" />
-</section>
+<html lang="fr" data-theme="UniMates">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="generator" content={Astro.generator} />
+    <title>UniMates</title>
+  </head>
+  <body style="overflow: hidden">
+    <h1 class="mt-30">UniMates</h1>
+    <p>Ton compagnon bien être au quotidien</p>
 
-<footer>
-  <p>&copy; 2024 UniMates. Tous droits réservés.</p>
-</footer>
-</Layout>
+    <!-- Familiers -->
+    <div class="relative h-100 w-full overflow-hidden">
+      <!-- Poussin : haut gauche -->
+      <img
+        src="/familiers/poussin.png"
+        alt="Compagnon poussin"
+        class="absolute top-4 left-4"
+      />
+
+      <!-- Girafe : centre droite -->
+      <img
+        src="/familiers/girafe.png"
+        alt="Compagnon girafe"
+        class="absolute top-1/2 right-4 -translate-y-1/2"
+      />
+
+      <!-- Abeille : bas gauche -->
+      <img
+        src="/familiers/abeille.png"
+        alt="Compagnon abeille"
+        class="absolute bottom-4 left-10"
+      />
+    </div>
+    <div class="mt-10 flex flex-col items-center gap-4 px-6">
+      <Bouton text="Commencer" url="/inscription" variant="beige" />
+      <Bouton text="Se connecter" url="/connexion" variant="jaune" />
+    </div>
+  </body>
+</html>
