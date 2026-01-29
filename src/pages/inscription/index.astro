@@ -1,0 +1,84 @@
+---
+import "../../styles/global.css";
+import { FAMILIERS } from "../../../backend/familiers";
+import Bouton from "../../components/Bouton.astro";
+---
+
+<html lang="fr" data-theme="UniMates">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>UniMates - Créer un compte</title>
+  </head>
+
+  <body class="overflow-hidden">
+    <h1 class="mt-25">Choisis ton familier</h1>
+    <p>Il t’accompagnera chaque jour</p>
+
+    <div class="space-y-10 mt-15">
+      {
+        Object.entries(FAMILIERS).map(([key, familier]) => (
+          <label class="bg-base-300 border-2 rounded-4xl shadow-md flex items-center pr-4 w-full cursor-pointer active:bg-info">
+            <img src={familier.svg} alt={familier.alt} class="w-20 shrink-0" />
+            <div class="py-6 flex-1">
+              <p class="font-jua text-left">{familier.name}</p>
+              <p class="text-left">{familier.description}</p>
+            </div>
+            <input
+              type="radio"
+              name="familier"
+              value={key}
+              data-familier={key}
+              class="sr-only peer"
+            />
+            <span
+              class="ml-3 w-6 h-6 rounded-full border-2 border-base-content/40 flex items-center justify-center
+                   peer-checked:border-neutral peer-checked:bg-neutral/50"
+            >
+              <span class="w-3 h-3 rounded-full bg-black opacity-0 peer-checked:opacity-100" />
+            </span>
+          </label>
+        ))
+      }
+    </div>
+
+    <div class="mt-10 flex flex-col items-center gap-4 px-6">
+      <button
+        id="continuer-button"
+        disabled
+        class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-15 border-2 rounded-4xl shadow-md w-full max-w-xs transition-all duration-300 ease-in-out transform bg-base-300 active:bg-info active:disabled:bg-base-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+      >
+        Continuer
+      </button>
+      <Bouton text="J'ai déjà un compte" url="/connexion" variant="jaune" />
+    </div>
+
+    <script>
+      console.log("Script started");
+
+      const continuerButton = document.getElementById("continuer-button");
+      const radios = document.querySelectorAll("input[name='familier']");
+
+      console.log("Radios found:", radios.length);
+      console.log("Button found:", continuerButton);
+
+      radios.forEach((radio) => {
+        console.log("Adding listener to radio:", radio.value);
+        radio.addEventListener("change", (e) => {
+          console.log("CHANGE event fired for:", radio.value);
+          const familier = radio.dataset.familier;
+
+          localStorage.setItem("familier", familier);
+          continuerButton.disabled = false;
+          console.log("Button disabled set to false");
+        });
+      });
+
+      continuerButton.addEventListener("click", () => {
+        if (!continuerButton.disabled) {
+          window.location.href = "/inscription/info-perso";
+        }
+      });
+    </script>
+  </body>
+</html>

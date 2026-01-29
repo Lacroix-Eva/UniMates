@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Jua&family=Kantumruy+Pro:ital,wght@0,100..700;1,100..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Balsamiq+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap');
 
 @import "tailwindcss";
 
@@ -45,38 +47,41 @@
     /* font */
     --font-jua: 'Jua', sans-serif;
     --font-kantumruy-pro: 'Kantumruy Pro', sans-serif;
+    --font-balsamiq-sans: 'Balsamiq Sans', cursive;
+    --font-quicksand: 'Quicksand', sans-serif;
+
 }
 
 @layer base {
     body {
-        @apply font-kantumruy-pro text-base-content bg-base-100 mx-7 flex flex-col items-center;
+        @apply font-kantumruy-pro text-base-content bg-base-100 mx-6 flex flex-col items-center;
     }
 
     h1,
     h2,
     h3,
     h4 {
-        @apply font-jua leading-[160%];
+        @apply font-jua font-extrabold leading-[160%];
     }
 
     h1 {
-        @apply text-center text-5xl font-semibold;
+        @apply text-center text-4xl;
 
     }
 
     h2 {
-        @apply text-2xl font-semibold md:text-3xl lg:text-4xl;
+        @apply text-3xl;
     }
 
     h3 {
-        @apply text-xl font-semibold md:text-2xl lg:text-3xl;
+        @apply text-2xl;
     }
 
     h4 {
-        @apply text-lg font-semibold md:text-xl lg:text-2xl;
+        @apply text-xl;
     }
 
     p {
-        @apply font-kantumruy-pro text-base lg:text-xl text-center;
+        @apply font-kantumruy-pro text-lg text-center;
     }
 }
