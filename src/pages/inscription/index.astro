@@ -79,6 +79,18 @@ import Bouton from "../../components/Bouton.astro";
           window.location.href = "/inscription/info-perso";
         }
       });
+
+      const savedFamilier = localStorage.getItem("familier");
+
+      if (savedFamilier) {
+        const radio = document.querySelector(
+          `input[data-familier="${savedFamilier}"]`,
+        );
+        if (radio) {
+          radio.checked = true;
+          continuerButton.disabled = false;
+        }
+      }
     </script>
   </body>
 </html>
