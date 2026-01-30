@@ -1,0 +1,49 @@
+<html>
+  <body>
+    <h1>Inscription</h1>
+    <form id="registerForm">
+      <input name="email" type="email" placeholder="Email" required /><br />
+      <input
+        name="password"
+        type="password"
+        placeholder="Mot de passe"
+        required
+      /><br />
+      <input
+        name="passwordConfirm"
+        type="password"
+        placeholder="Confirmez le mot de passe"
+        required
+      /><br />
+      <button>S'inscrire</button>
+    </form>
+    <p id="msg"></p>
+    <p>Déjà un compte ? <a href="/connexion">Se connecter</a></p>
+
+    <script type="module">
+      import pb from "/pocketbase/pb.ts";
+
+      const form = document.getElementById("registerForm");
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const email = form.email.value;
+        const password = form.password.value;
+        const passwordConfirm = form.passwordConfirm.value;
+        try {
+          // création utilisateur
+          await pb.collection("users").create({
+            email,
+            password,
+            passwordConfirm,
+          });
+          // login direct après inscription
+          await pb.collection("users").authWithPassword(email, password);
+          location.href = "/inscription/info-perso";
+        } catch (err) {
+          document.getElementById("msg").textContent = "Échec de l'inscription : " + err.message;
+          console.error(err);
+        }
+      };
+    </script>
+  </body>
+</html>
