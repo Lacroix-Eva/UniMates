@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">UniMates</string>
+    <string name="title_activity_main">UniMates</string>
+    <string name="package_name">com.ccc.unimates</string>
+    <string name="custom_url_scheme">com.ccc.unimates</string>
+</resources>
