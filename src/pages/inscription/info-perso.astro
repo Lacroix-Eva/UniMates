@@ -40,7 +40,8 @@
           await pb.collection("users").authWithPassword(email, password);
           location.href = "/inscription/info-perso";
         } catch (err) {
-          document.getElementById("msg").textContent = "Échec de l'inscription : " + err.message;
+          document.getElementById("msg").textContent =
+            "Échec de l'inscription : " + err.message;
           console.error(err);
         }
       };
