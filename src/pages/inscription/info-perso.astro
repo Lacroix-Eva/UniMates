@@ -1,50 +1,146 @@
-<html>
-  <body>
-    <h1>Inscription</h1>
-    <form id="registerForm">
-      <input name="email" type="email" placeholder="Email" required /><br />
-      <input
-        name="password"
-        type="password"
-        placeholder="Mot de passe"
-        required
-      /><br />
-      <input
-        name="passwordConfirm"
-        type="password"
-        placeholder="Confirmez le mot de passe"
-        required
-      /><br />
-      <button>S'inscrire</button>
-    </form>
-    <p id="msg"></p>
-    <p>Déjà un compte ? <a href="/connexion">Se connecter</a></p>
+---
+import LayoutNeutre from "../../layouts/LayoutNeutre.astro";
+import Bouton from "../../components/Bouton.astro";
+---
 
-    <script type="module">
-      import pb from "/pocketbase/pb.ts";
+<LayoutNeutre nomPage="Inscription - Informations personnelles">
+  <h1 class="mt-25">Inscription</h1>
+  <p>Renseigne tes informations pour continuer</p>
 
-      const form = document.getElementById("registerForm");
-      form.onsubmit = async (e) => {
-        e.preventDefault();
-        const email = form.email.value;
-        const password = form.password.value;
-        const passwordConfirm = form.passwordConfirm.value;
-        try {
-          // création utilisateur
-          await pb.collection("users").create({
-            email,
-            password,
-            passwordConfirm,
+  <form id="registerForm" class="mt-15 space-y-6 w-full max-w-sm">
+    <input
+      name="pseudo"
+      type="text"
+      placeholder="Nom d'utilisateur"
+      required
+      pattern="[A-Za-z0-9_-]+"
+      title="Le pseudo doit contenir uniquement des lettres, chiffres, tirets (-) ou underscore (_)"
+      class="w-full bg-base-300 border-2 rounded-4xl shadow-md px-5 py-3 text-base-content placeholder:text-base-content/60"
+    />
+    <input
+      name="email"
+      type="email"
+      placeholder="Email"
+      required
+      class="w-full bg-base-300 border-2 rounded-4xl shadow-md px-5 py-3 text-base-content placeholder:text-base-content/60"
+    />
+    <input
+      name="password"
+      type="password"
+      placeholder="Mot de passe"
+      required
+      class="w-full bg-base-300 border-2 rounded-4xl shadow-md px-5 py-3 text-base-content placeholder:text-base-content/60"
+    />
+    <input
+      name="passwordConfirm"
+      type="password"
+      placeholder="Confirmez le mot de passe"
+      required
+      class="w-full bg-base-300 border-2 rounded-4xl shadow-md px-5 py-3 text-base-content placeholder:text-base-content/60"
+    />
+
+    <p id="msg" class="mt-2 text-center"></p>
+
+    <div class="mt-8 flex flex-col items-center gap-4 px-6">
+      <button
+        type="submit"
+        class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-15 border-2 rounded-4xl shadow-md w-full max-w-xs transition-all duration-300 ease-in-out transform bg-base-300 active:bg-info cursor-pointer"
+      >
+        S'inscrire
+      </button>
+      <Bouton text="J'ai déjà un compte" url="/connexion" variant="jaune" />
+      <button
+        id="googlelogin"
+        type="button"
+        class="inline-flex items-center justify-center gap-3 text-base-content font-balsamiq-sans font-bold text-lg py-3 px-6 border-2 rounded-4xl shadow-md w-full max-w-xs transition-all duration-300 ease-in-out transform bg-white active:bg-base-300 cursor-pointer"
+      >
+        <img src="/google.svg" alt="Google" class="w-6 h-6" />
+        Se connecter avec Google
+      </button>
+    </div>
+  </form>
+
+  <script type="module">
+    import pb from "/pocketbase/pb.ts";
+
+    const form = document.getElementById("registerForm");
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const pseudo = form.pseudo.value;
+      const email = form.email.value;
+      const password = form.password.value;
+      const passwordConfirm = form.passwordConfirm.value;
+
+      // Récupérer le familier depuis localStorage
+      const familier = localStorage.getItem("familier");
+
+      if (!familier) {
+        document.getElementById("msg").textContent =
+          "Veuillez d'abord choisir un familier";
+        window.location.href = "/inscription";
+        return;
+      }
+
+      try {
+        // Capitaliser la première lettre pour correspondre aux options de PocketBase
+        const familierCapitalized =
+          familier.charAt(0).toUpperCase() + familier.slice(1);
+
+        // création utilisateur avec le familier
+        await pb.collection("users").create({
+          email,
+          password,
+          passwordConfirm,
+          familier: familierCapitalized,
+          pseudo,
+        });
+
+        // login direct après inscription
+        await pb.collection("users").authWithPassword(email, password);
+
+        // Nettoyer localStorage
+        localStorage.removeItem("familier");
+
+        // Rediriger vers le tableau de bord ou page suivante
+        location.href = "/inscription/personnalisation";
+      } catch (err) {
+        document.getElementById("msg").textContent =
+          "Échec de l'inscription : " + err.message;
+        console.error(err);
+      }
+    };
+
+    const googlelogin = document.getElementById("googlelogin");
+    googlelogin.onclick = async () => {
+      const familier = localStorage.getItem("familier");
+
+      if (!familier) {
+        document.getElementById("msg").textContent =
+          "Veuillez d'abord choisir un familier";
+        window.location.href = "/inscription";
+        return;
+      }
+
+      try {
+        await pb.collection("users").authWithOAuth2({ provider: "google" });
+
+        const familierCapitalized =
+          familier.charAt(0).toUpperCase() + familier.slice(1);
+
+        const userId = pb.authStore?.model?.id;
+        if (userId) {
+          await pb.collection("users").update(userId, {
+            familier: familierCapitalized,
           });
-          // login direct après inscription
-          await pb.collection("users").authWithPassword(email, password);
-          location.href = "/inscription/info-perso";
-        } catch (err) {
-          document.getElementById("msg").textContent =
-            "Échec de l'inscription : " + err.message;
-          console.error(err);
         }
-      };
-    </script>
-  </body>
-</html>
+
+        localStorage.removeItem("familier");
+        location.href = "/inscription/personnalisation";
+      } catch (err) {
+        document.getElementById("msg").textContent =
+          "Échec de connexion Google";
+        console.error(err);
+      }
+    };
+  </script>
+</LayoutNeutre>
