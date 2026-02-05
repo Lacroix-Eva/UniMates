@@ -12,7 +12,7 @@ import Bouton from "../components/Bouton.astro";
     <meta name="generator" content={Astro.generator} />
     <title>UniMates</title>
   </head>
-  <body style="overflow: hidden"></body>
+  <body style="overflow: hidden">
     <h1 class="mt-25 text-5xl">UniMates</h1>
     <p>Ton compagnon bien être au quotidien</p>
 
@@ -42,6 +42,7 @@ import Bouton from "../components/Bouton.astro";
     <div class="mt-10 flex flex-col items-center gap-4 px-6">
       <Bouton text="Commencer" url="/inscription" variant="beige" />
       <Bouton text="Se connecter" url="/connexion" variant="jaune" />
+      <button onclick="window.location.href='/inscription'">TEST INSCRIPTION</button>
     </div>
   </body>
 </html>
