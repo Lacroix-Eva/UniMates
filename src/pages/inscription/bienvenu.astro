@@ -1,0 +1,71 @@
+---
+import LayoutNeutreProtege from "../../layouts/LayoutNeutreProtege.astro";
+import Bouton from "../../components/Bouton.astro";
+---
+
+<LayoutNeutreProtege nomPage="Bienvenue">
+  <h1><span id="familierTitle"></span></h1>
+  <div class="w-50 h-50 mt-6">
+    <img
+      id="familierImage"
+      src=""
+      alt="Ton familier"
+      class="w-full h-full object-contain"
+    />
+  </div>
+
+  <!-- Bulle de message -->
+  <div class="flex justify-center mt-8">
+    <div class="relative">
+      <div
+        class="absolute left-1/2 -translate-x-1/2 -top-4 w-0 h-0 border-l-70 border-r-70 border-b-40 border-l-transparent border-r-transparent border-b-base-300"
+      >
+      </div>
+      <div class="bg-base-300 shadow-lg p-6 w-68 min-h-32">
+        <p class="text-base-content">
+          Salut ! Je m'appelle
+          <span id="familierName"></span>
+          et je vais t'accompagner au quotidien 👋
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="mt-20">
+    <Bouton text="Continuer" url="/accueil" variant="beige" />
+</LayoutNeutreProtege>
+
+<script type="module" is:inline>
+  import pb from "/pocketbase/pb.ts";
+
+  const familierName = document.getElementById("familierName");
+  const familierTitle = document.getElementById("familierTitle");
+  const familierImage = document.getElementById("familierImage");
+
+  const familierNameMap = {
+    plume: "Plume",
+    buzzy: "Buzzy",
+    sunny: "Sunny",
+    Plume: "Plume",
+    Buzzy: "Buzzy",
+    Sunny: "Sunny",
+  };
+
+  const baseImages = {
+    plume: "/familiers/plume.png",
+    buzzy: "/familiers/buzzy.png",
+    sunny: "/familiers/sunny.png",
+    Plume: "/familiers/plume.png",
+    Buzzy: "/familiers/buzzy.png",
+    Sunny: "/familiers/sunny.png",
+  };
+
+  if (pb.authStore.isValid && pb.authStore.model) {
+    const familier = pb.authStore.model.familier || "Plume";
+    const displayName = familierNameMap[familier] || familier;
+    const imagePath = baseImages[familier] || "/familiers/plume.png";
+
+    familierName.textContent = displayName;
+    familierTitle.textContent = displayName;
+    familierImage.src = imagePath;
+  }
+</script>

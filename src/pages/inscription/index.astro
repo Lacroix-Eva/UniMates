@@ -4,10 +4,10 @@ import { FAMILIERS } from "../../../backend/familiers";
 import Bouton from "../../components/Bouton.astro";
 ---
 
-<LayoutNeutre nomPage="Inscription - Choix familier">
-  <h1 class="mt-20">Choisis ton familier</h1>
-  <p>Il t’accompagnera chaque jour</p>
-
+<LayoutNeutre
+  nomPage="Inscription - Choix familier"
+  titre_page="Choisis ton familiere"
+  intro_page="Il t’accompagnera chaque jour">
   <div class="space-y-10 mt-15">
     {
       Object.entries(FAMILIERS).map(([key, familier]) => (

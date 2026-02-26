@@ -5,7 +5,7 @@ import Bouton from "../../components/Bouton.astro";
 
 <LayoutNeutreProtege nomPage="Personnalisation" titre_page="Personnalise ton familier">
   <div class="font-kantumruy-pro text-lg text-center">
-    <span>Vos points disponibles:</span>
+    <span class="">Vos points disponibles:</span>
     <span id="pointsValue" class="font-bold">0</span>
   </div>
 
@@ -31,12 +31,12 @@ import Bouton from "../../components/Bouton.astro";
       <p id="msg" class="text-center text-accent"></p>
       <button
         id="saveButton"
-        class="bg-base-300 active:bg-info inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-10 border-2 rounded-4xl shadow-md w-full min-w-65 max-w-xs
+        class="bg-base-300 active:bg-info inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-10 border-2 rounded-4xl shadow-md min-w-65 max-w-xs
         transition-all duration-300 ease-in-out transform"
       >
         Valider
       </button>
-      <Bouton text="Retour à l'accueil" url="/accueil" variant="jaune" />
+      <Bouton text="Continuer" url="/inscription/bienvenu" variant="jaune" />
     </div>
   </section>
 
