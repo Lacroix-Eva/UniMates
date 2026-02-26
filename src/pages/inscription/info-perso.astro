@@ -4,7 +4,7 @@ import Bouton from "../../components/Bouton.astro";
 ---
 
 <LayoutNeutre nomPage="Inscription - Informations personnelles">
-  <h1 class="mt-25">Inscription</h1>
+  <h1 class="mt-20">Inscription</h1>
   <p>Renseigne tes informations pour continuer</p>
 
   <form id="registerForm" class="mt-15 space-y-6 w-full max-w-sm">
@@ -12,9 +12,6 @@ import Bouton from "../../components/Bouton.astro";
       name="pseudo"
       type="text"
       placeholder="Nom d'utilisateur"
-      required
-      pattern="[A-Za-z0-9_-]+"
-      title="Le pseudo doit contenir uniquement des lettres, chiffres, tirets (-) ou underscore (_)"
       class="w-full bg-base-300 border-2 rounded-4xl shadow-md px-5 py-3 text-base-content placeholder:text-base-content/60"
     />
     <input
@@ -27,8 +24,9 @@ import Bouton from "../../components/Bouton.astro";
     <input
       name="password"
       type="password"
-      placeholder="Mot de passe"
+      placeholder="Mot de passe (min. 8 caractères)"
       required
+      minlength="8"
       class="w-full bg-base-300 border-2 rounded-4xl shadow-md px-5 py-3 text-base-content placeholder:text-base-content/60"
     />
     <input
@@ -36,6 +34,7 @@ import Bouton from "../../components/Bouton.astro";
       type="password"
       placeholder="Confirmez le mot de passe"
       required
+      minlength="8"
       class="w-full bg-base-300 border-2 rounded-4xl shadow-md px-5 py-3 text-base-content placeholder:text-base-content/60"
     />
 
@@ -63,6 +62,11 @@ import Bouton from "../../components/Bouton.astro";
   <script type="module">
     import pb from "/pocketbase/pb.ts";
 
+    // Rediriger si déjà connecté
+    if (pb.authStore.isValid) {
+      window.location.href = "/personnalisation";
+    }
+
     const form = document.getElementById("registerForm");
     form.onsubmit = async (e) => {
       e.preventDefault();
@@ -73,8 +77,14 @@ import Bouton from "../../components/Bouton.astro";
 
       // Récupérer le familier depuis localStorage
       const familier = localStorage.getItem("familier");
+      const familierMap = {
+        plume: "Plume",
+        sunny: "Sunny",
+        buzzy: "Buzzy",
+      };
+      const familierValue = familier ? familierMap[familier] : null;
 
-      if (!familier) {
+      if (!familierValue) {
         document.getElementById("msg").textContent =
           "Veuillez d'abord choisir un familier";
         window.location.href = "/inscription";
@@ -82,17 +92,15 @@ import Bouton from "../../components/Bouton.astro";
       }
 
       try {
-        // Capitaliser la première lettre pour correspondre aux options de PocketBase
-        const familierCapitalized =
-          familier.charAt(0).toUpperCase() + familier.slice(1);
-
         // création utilisateur avec le familier
         await pb.collection("users").create({
           email,
           password,
           passwordConfirm,
-          familier: familierCapitalized,
+          familier: familierValue,
+          points: 3,
           pseudo,
+          purchases: {},
         });
 
         // login direct après inscription
@@ -102,19 +110,50 @@ import Bouton from "../../components/Bouton.astro";
         localStorage.removeItem("familier");
 
         // Rediriger vers le tableau de bord ou page suivante
-        location.href = "/inscription/personnalisation";
+        location.href = "/personnalisation";
       } catch (err) {
-        document.getElementById("msg").textContent =
-          "Échec de l'inscription : " + err.message;
-        console.error(err);
+        let errorMessage = "Échec de l'inscription";
+
+        // Détecter les erreurs de mot de passe
+        if (
+          err.message &&
+          (err.message.includes("password") || err.message.includes("Password"))
+        ) {
+          if (password.length < 8) {
+            errorMessage =
+              "Le mot de passe doit contenir au moins 8 caractères";
+          } else if (password !== passwordConfirm) {
+            errorMessage = "Les mots de passe ne correspondent pas";
+          } else {
+            errorMessage =
+              "Le mot de passe ne respecte pas les critères requis";
+          }
+        } else if (err.message && err.message.includes("email")) {
+          errorMessage = "Cette adresse email est déjà utilisée";
+        } else if (err.message) {
+          errorMessage = "Échec de l'inscription : " + err.message;
+        }
+
+        document.getElementById("msg").textContent = errorMessage;
+        console.error("Erreur complète:", err);
+        console.error(
+          "Détails de l'erreur:",
+          JSON.stringify(err.data, null, 2),
+        );
       }
     };
 
     const googlelogin = document.getElementById("googlelogin");
     googlelogin.onclick = async () => {
       const familier = localStorage.getItem("familier");
+      const familierMap = {
+        plume: "Plume",
+        sunny: "Sunny",
+        buzzy: "Buzzy",
+      };
+      const familierValue = familier ? familierMap[familier] : null;
 
-      if (!familier) {
+      if (!familierValue) {
         document.getElementById("msg").textContent =
           "Veuillez d'abord choisir un familier";
         window.location.href = "/inscription";
@@ -124,18 +163,15 @@ import Bouton from "../../components/Bouton.astro";
       try {
         await pb.collection("users").authWithOAuth2({ provider: "google" });
 
-        const familierCapitalized =
-          familier.charAt(0).toUpperCase() + familier.slice(1);
-
         const userId = pb.authStore?.model?.id;
         if (userId) {
           await pb.collection("users").update(userId, {
-            familier: familierCapitalized,
+            familier: familierValue,
           });
         }
 
         localStorage.removeItem("familier");
-        location.href = "/inscription/personnalisation";
+        location.href = "/personnalisation";
       } catch (err) {
         document.getElementById("msg").textContent =
           "Échec de connexion Google";

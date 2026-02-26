@@ -1,0 +1,139 @@
+---
+import LayoutProtege from "../../layouts/LayoutProtege.astro";
+---
+
+<LayoutProtege nomPage="Accueil">
+  <h1 class="mt-20">Bienvenue sur UniMates !</h1>
+  <p>Ton espace personnel</p>
+
+  <div class="mt-15 space-y-6 w-full max-w-sm">
+    <div
+      class="bg-base-300 border-2 rounded-4xl shadow-md p-6 flex flex-col items-center"
+    >
+      <div
+        class="w-44 h-44 rounded-full bg-base-100 border-2 shadow-md flex items-center justify-center overflow-hidden"
+      >
+        <img
+          id="familierImage"
+          src=""
+          alt="Ton familier"
+          class="w-full h-full object-contain"
+        />
+      </div>
+      <p id="familierName" class="mt-4 font-jua text-xl"></p>
+    </div>
+
+    <button
+      id="logoutButton"
+      class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-10 border-2 rounded-4xl shadow-md w-full max-w-xs transition-all duration-300 ease-in-out transform bg-base-300 active:bg-info cursor-pointer"
+    >
+      Se déconnecter
+    </button>
+  </div>
+
+  <script type="module" is:inline>
+    import pb from "/pocketbase/pb.ts";
+
+    const familierImage = document.getElementById("familierImage");
+    const familierName = document.getElementById("familierName");
+
+    const baseImages = {
+      plume: "/familiers/plume.png",
+      sunny: "/familiers/sunny.png",
+      buzzy: "/familiers/buzzy.png",
+    };
+
+    const familierNames = {
+      plume: "Plume",
+      sunny: "Sunny",
+      buzzy: "Buzzy",
+    };
+
+    const loadFamilier = async () => {
+      if (!pb.authStore.isValid || !pb.authStore.model) {
+        return;
+      }
+
+      // Récupérer les données à jour depuis PocketBase
+      let user = pb.authStore.model;
+      try {
+        const userId = pb.authStore.model.id;
+        user = await pb.collection("users").getOne(userId);
+        console.log("User data:", user);
+        console.log("Customisation:", user.customisation);
+        console.log("Type customisation:", typeof user.customisation);
+      } catch (err) {
+        console.error("Erreur lors du chargement du profil:", err);
+      }
+
+      const rawFamilier = (user.familier || "Plume").toString().toLowerCase();
+      const familierKey = baseImages[rawFamilier] ? rawFamilier : "plume";
+
+      // Charger l'image personnalisée si disponible
+      let imagePath = baseImages[familierKey];
+
+      // Parser customisation si c'est une string JSON
+      let customisation = user.customisation || {};
+      if (typeof customisation === "string") {
+        try {
+          customisation = JSON.parse(customisation);
+        } catch {
+          customisation = {};
+        }
+      }
+
+      console.log("Customisation après parsing:", customisation);
+      console.log("variantId:", customisation.variantId);
+
+      if (customisation && customisation.variantId) {
+        const variantId = customisation.variantId;
+        const variantIndex = parseInt(variantId.split("_")[1]) - 1;
+        console.log("variantIndex calculé:", variantIndex);
+        const variants = {
+          plume: [
+            "/familiers/plume.png",
+            "/familiers/plume2.png",
+            "/familiers/plume3.png",
+            "/familiers/plume4.png",
+            "/familiers/plume5.png",
+            "/familiers/plume6.png",
+            "/familiers/plume7.png",
+          ],
+          sunny: [
+            "/familiers/sunny.png",
+            "/familiers/sunny2.png",
+            "/familiers/sunny3.png",
+            "/familiers/sunny4.png",
+            "/familiers/sunny5.png",
+            "/familiers/sunny6.png",
+            "/familiers/sunny7.png",
+          ],
+          buzzy: [
+            "/familiers/buzzy.png",
+            "/familiers/buzzy2.png",
+            "/familiers/buzzy3.png",
+            "/familiers/buzzy4.png",
+            "/familiers/buzzy5.png",
+            "/familiers/buzzy6.png",
+            "/familiers/buzzy7.png",
+          ],
+        };
+
+        const list = variants[familierKey] || variants.plume;
+        imagePath = list[variantIndex] || list[0];
+        console.log("Image path finale:", imagePath);
+      }
+
+      familierImage.src = imagePath;
+      familierName.textContent = familierNames[familierKey] || "Ton familier";
+    };
+
+    const logoutButton = document.getElementById("logoutButton");
+    logoutButton.addEventListener("click", () => {
+      pb.authStore.clear();
+      window.location.href = "/";
+    });
+
+    loadFamilier();
+  </script>
+</LayoutProtege>

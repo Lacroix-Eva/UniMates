@@ -54,7 +54,7 @@
 
 @layer base {
     body {
-        @apply font-kantumruy-pro text-base-content bg-base-100 mx-6 flex flex-col items-center;
+        @apply font-kantumruy-pro text-base-content bg-base-100 mx-6 mb-6 flex flex-col items-center;
     }
 
     h1,

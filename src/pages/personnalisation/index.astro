@@ -1,0 +1,283 @@
+---
+import LayoutNeutreProtege from "../../layouts/LayoutNeutreProtege.astro";
+import Bouton from "../../components/Bouton.astro";
+---
+
+<LayoutNeutreProtege nomPage="Personnalisation">
+  <h1 class="mt-20">Personnalise ton familier</h1>
+  <div class="font-kantumruy-pro text-lg text-center">
+    <span class="">Vos points disponibles:</span>
+    <span id="pointsValue" class="font-bold">0</span>
+  </div>
+
+  <section class="mt-8 w-full max-w-md space-y-6">
+    <div
+      class="w-100% h-50 bg-white border-2 rounded-4xl shadow-md p-2 flex flex-col items-center"
+    >
+      <img
+        id="previewImage"
+        src=""
+        alt="Apercu du familier"
+        class="w-full h-full object-contain"
+      />
+    </div>
+
+    <div>
+      <p>Sélectionne un accessoire.</p>
+      <p>Les options verrouillées demandent des points.</p>
+      <div id="options" class="mt-4 grid grid-cols-3 gap-3"></div>
+    </div>
+
+    <div class="mt-6 flex flex-col items-center gap-3">
+      <button
+        id="saveButton"
+        class="bg-base-300 active:bg-info inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-10 border-2 rounded-4xl shadow-md w-full min-w-65 max-w-xs
+        transition-all duration-300 ease-in-out transform"
+      >
+        Valider
+      </button>
+      <p id="msg" class="text-center text-accent"></p>
+      <Bouton text="Retour à l'accueil" url="/accueil" variant="jaune" />
+    </div>
+  </section>
+
+  <script type="module" is:inline>
+    import pb from "/pocketbase/pb.ts";
+
+    const DEFAULT_POINTS = 3;
+    const msg = document.getElementById("msg");
+    const optionsContainer = document.getElementById("options");
+    const pointsValue = document.getElementById("pointsValue");
+    const previewImage = document.getElementById("previewImage");
+    const saveButton = document.getElementById("saveButton");
+
+    const state = {
+      points: DEFAULT_POINTS,
+      familierKey: "plume",
+      selectedId: "variant_1",
+      purchases: {},
+    };
+
+    const baseImages = {
+      plume: [
+        "/familiers/plume.png",
+        "/familiers/plume2.png",
+        "/familiers/plume3.png",
+        "/familiers/plume4.png",
+        "/familiers/plume5.png",
+        "/familiers/plume6.png",
+        "/familiers/plume7.png",
+      ],
+      sunny: [
+        "/familiers/sunny.png",
+        "/familiers/sunny2.png",
+        "/familiers/sunny3.png",
+        "/familiers/sunny4.png",
+        "/familiers/sunny5.png",
+        "/familiers/sunny6.png",
+        "/familiers/sunny7.png",
+      ],
+      buzzy: [
+        "/familiers/buzzy.png",
+        "/familiers/buzzy2.png",
+        "/familiers/buzzy3.png",
+        "/familiers/buzzy4.png",
+        "/familiers/buzzy5.png",
+        "/familiers/buzzy6.png",
+        "/familiers/buzzy7.png",
+      ],
+    };
+
+    const options = [
+      { id: "variant_1", label: "Classique", cost: 0, index: 0 },
+      { id: "variant_2", label: "Style 2", cost: 3, index: 1 },
+      { id: "variant_3", label: "Style 3", cost: 10, index: 2 },
+      { id: "variant_4", label: "Style 4", cost: 15, index: 3 },
+      { id: "variant_5", label: "Style 5", cost: 20, index: 4 },
+      { id: "variant_6", label: "Style 6", cost: 25, index: 5 },
+      { id: "variant_7", label: "Style 7", cost: 30, index: 6 },
+    ];
+
+    const resolveImage = (option) => {
+      const list = baseImages[state.familierKey] || baseImages.plume;
+      return list[option.index] || list[0];
+    };
+
+    const render = () => {
+      pointsValue.textContent = String(state.points);
+      optionsContainer.innerHTML = "";
+
+      options.forEach((option) => {
+        const isOwned =
+          option.cost === 0 || Boolean(state.purchases[option.id]);
+        const locked = !isOwned && option.cost > state.points;
+        const selected = state.selectedId === option.id;
+        const imageUrl = resolveImage(option);
+
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = [
+          "relative border-2 rounded-2xl shadow-md p-2 aspect-square",
+          "transition-all duration-300",
+          locked
+            ? "bg-base-200 opacity-60 cursor-not-allowed grayscale"
+            : "bg-base-300 hover:bg-base-200",
+          selected ? "border-neutral" : "border-base-300",
+        ].join(" ");
+
+        item.innerHTML = `
+					<img src="${imageUrl}" alt="${option.label}" class="w-full h-full object-contain" />
+            <div class="absolute bottom-1 right-1 text-xs font-balsamiq-sans bg-base-100/90 px-2 py-0.5 rounded-full">
+              ${option.cost} pt
+            </div>
+            ${
+              isOwned
+                ? '<div class="absolute top-1 left-1 text-[10px] font-balsamiq-sans bg-base-100/90 px-2 py-0.5 rounded-full">Achete</div>'
+                : ""
+            }
+					${
+            locked
+              ? '<div class="absolute inset-0 flex items-center justify-center font-kantumruy-pro text-lg font-semibold">Bloqué</div>'
+              : ""
+          }
+				`;
+
+        if (!locked) {
+          item.addEventListener("click", () => {
+            state.selectedId = option.id;
+            msg.textContent = "";
+            render();
+            updatePreview();
+          });
+        } else {
+          item.addEventListener("click", () => {
+            msg.textContent = "Pas assez de points pour cet objet";
+          });
+        }
+
+        optionsContainer.appendChild(item);
+      });
+    };
+
+    const updatePreview = () => {
+      const selected = options.find((option) => option.id === state.selectedId);
+      previewImage.src = selected
+        ? resolveImage(selected)
+        : resolveImage(options[0]);
+    };
+
+    const loadUser = async () => {
+      if (!pb.authStore.isValid || !pb.authStore.model) {
+        window.location.href = "/connexion";
+        return;
+      }
+
+      const applyUserData = (user) => {
+        const rawFamilier = (user.familier || "plum").toString().toLowerCase();
+        const familierKeyMap = {
+          plum: "plume",
+          plume: "plume",
+          sunny: "sunny",
+          buzzy: "buzzy",
+        };
+        const familierKey = familierKeyMap[rawFamilier] || "plume";
+        state.familierKey = baseImages[familierKey] ? familierKey : "plume";
+        state.points = Number(user.points ?? DEFAULT_POINTS) || DEFAULT_POINTS;
+
+        let purchases = user.purchases || {};
+        if (typeof purchases === "string") {
+          try {
+            purchases = JSON.parse(purchases);
+          } catch {
+            purchases = {};
+          }
+        }
+        if (Array.isArray(purchases)) {
+          purchases = purchases.reduce((acc, id) => {
+            acc[id] = true;
+            return acc;
+          }, {});
+        }
+
+        state.purchases = purchases || {};
+
+        let saved = user.customisation || {};
+        if (typeof saved === "string") {
+          try {
+            saved = JSON.parse(saved);
+          } catch {
+            saved = {};
+          }
+        }
+
+        if (
+          saved.variantId &&
+          options.some((option) => option.id === saved.variantId)
+        ) {
+          state.selectedId = saved.variantId;
+        }
+      };
+
+      try {
+        const userId = pb.authStore.model.id;
+        const user = await pb.collection("users").getOne(userId);
+        applyUserData(user);
+      } catch (err) {
+        applyUserData(pb.authStore.model);
+      }
+
+      render();
+      updatePreview();
+    };
+
+    saveButton.addEventListener("click", async () => {
+      const userId = pb.authStore.model?.id;
+      if (!userId) {
+        msg.textContent = "Impossible de sauvegarder";
+        return;
+      }
+
+      const selected = options.find((option) => option.id === state.selectedId);
+      if (!selected) {
+        msg.textContent = "Selection invalide";
+        return;
+      }
+
+      const isOwned =
+        selected.cost === 0 || Boolean(state.purchases[selected.id]);
+      if (!isOwned && selected.cost > state.points) {
+        msg.textContent = "Pas assez de points pour cet objet";
+        return;
+      }
+
+      try {
+        const updatedPurchases = { ...state.purchases };
+        let updatedPoints = state.points;
+
+        if (!isOwned && selected.cost > 0) {
+          updatedPurchases[selected.id] = true;
+          updatedPoints = Math.max(0, state.points - selected.cost);
+        }
+
+        await pb.collection("users").update(userId, {
+          customisation: { variantId: state.selectedId },
+          purchases: updatedPurchases,
+          points: updatedPoints,
+        });
+
+        state.purchases = updatedPurchases;
+        state.points = updatedPoints;
+        render();
+        updatePreview();
+        msg.textContent = isOwned
+          ? "Personnalisation sauvegardee"
+          : "Achat effectue et personnalisation sauvegardee";
+      } catch (err) {
+        msg.textContent = "Erreur lors de la sauvegarde";
+        console.error(err);
+      }
+    });
+
+    loadUser();
+  </script>
+</LayoutNeutreProtege>

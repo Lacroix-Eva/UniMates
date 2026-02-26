@@ -14,5 +14,12 @@ const { ...item } = Astro.props;
   </head>
   <body>
     <slot />
+    <script type="module" is:inline>
+      import pb from "/pocketbase/pb.ts";
+
+      if (!pb.authStore.isValid) {
+        window.location.href = "/connexion";
+      }
+    </script>
   </body>
 </html>

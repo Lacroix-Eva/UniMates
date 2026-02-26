@@ -1,0 +1,86 @@
+---
+import LayoutNeutre from "../../layouts/LayoutNeutre.astro";
+import Bouton from "../../components/Bouton.astro";
+---
+
+<LayoutNeutre nomPage="Connexion">
+  <h1 class="mt-20">Connexion</h1>
+  <p>Renseigne tes informations pour te connecter</p>
+
+  <form id="loginForm" class="mt-15 space-y-6 w-full max-w-sm">
+    <input
+      name="email"
+      type="email"
+      placeholder="Email"
+      required
+      class="w-full bg-base-300 border-2 rounded-4xl shadow-md px-5 py-3 text-base-content placeholder:text-base-content/60"
+    />
+    <input
+      name="password"
+      type="password"
+      placeholder="Mot de passe"
+      required
+      class="w-full bg-base-300 border-2 rounded-4xl shadow-md px-5 py-3 text-base-content placeholder:text-base-content/60"
+    />
+    <p id="msg" class="mt-2 text-center text-accent"></p>
+
+    <div class="mt-8 flex flex-col items-center gap-4 px-6">
+      <button
+        type="submit"
+        class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-15 border-2 rounded-4xl shadow-md w-full max-w-xs transition-all duration-300 ease-in-out transform bg-base-300 active:bg-info cursor-pointer"
+      >
+        Se connecter
+      </button>
+      <button
+        id="googlelogin"
+        type="button"
+        class="inline-flex items-center justify-center gap-3 text-base-content font-balsamiq-sans font-bold text-lg py-3 px-6 border-2 rounded-4xl shadow-md w-full max-w-xs transition-all duration-300 ease-in-out transform bg-white active:bg-base-300 cursor-pointer"
+      >
+        <img src="/google.svg" alt="Google" class="w-6 h-6" />
+        Se connecter avec Google
+      </button>
+
+      <p class="mt-6">Pas encore de compte ?</p>
+      <Bouton text="S'inscrire" url="/inscription" variant="jaune" />
+    </div>
+  </form>
+
+  <script type="module" is:inline>
+    import pb from "/pocketbase/pb.ts";
+
+    // Rediriger si déjà connecté
+    if (pb.authStore.isValid) {
+      window.location.href = "/accueil";
+    }
+
+    const form = document.getElementById("loginForm");
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      try {
+        await pb
+          .collection("users")
+          .authWithPassword(form.email.value, form.password.value);
+        location.href = "/accueil";
+      } catch (err) {
+        document.getElementById("msg").textContent =
+          "Email ou mot de passe incorrect";
+        console.error(err);
+      }
+    };
+
+    const googlelogin = document.getElementById("googlelogin");
+    googlelogin.onclick = async () => {
+      try {
+        await pb.collection("users").authWithOAuth2({
+          provider: "google",
+        });
+
+        location.href = "/accueil";
+      } catch (err) {
+        document.getElementById("msg").textContent =
+          "Échec de connexion avec Google";
+        console.error(err);
+      }
+    };
+  </script>
+</LayoutNeutre>

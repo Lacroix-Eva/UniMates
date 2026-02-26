@@ -95,15 +95,17 @@ export enum UsersFamilierOptions {
 	"Sunny" = "Sunny",
 	"Buzzy" = "Buzzy",
 }
-export type UsersRecord = {
-	avatar?: string
+export type UsersRecord<Tcustomisation = unknown, Tpurchases = unknown> = {
 	created?: IsoDateString
+	customisation?: null | Tcustomisation
 	email: string
 	emailVisibility?: boolean
 	familier?: UsersFamilierOptions
 	id: string
 	password: string
+	points?: number
 	pseudo?: string
+	purchases?: null | Tpurchases
 	tokenKey: string
 	updated?: IsoDateString
 	verified?: boolean
@@ -115,7 +117,7 @@ export type ExternalauthsResponse<Texpand = unknown> = Required<ExternalauthsRec
 export type MfasResponse<Texpand = unknown> = Required<MfasRecord> & BaseSystemFields<Texpand>
 export type OtpsResponse<Texpand = unknown> = Required<OtpsRecord> & BaseSystemFields<Texpand>
 export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> & AuthSystemFields<Texpand>
-export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
+export type UsersResponse<Tcustomisation = unknown, Tpurchases = unknown, Texpand = unknown> = Required<UsersRecord<Tcustomisation, Tpurchases>> & AuthSystemFields<Texpand>
 
 // Types containing all Records and Responses, useful for creating typing helper functions
 
