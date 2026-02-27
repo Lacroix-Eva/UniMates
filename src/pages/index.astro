@@ -17,7 +17,7 @@ import Bouton from "../components/Bouton.astro";
     <p>Ton compagnon bien être au quotidien</p>
 
     <!-- Familiers -->
-    <div class="relative h-100  overflow-hidden">
+    <div class="relative min-h-[25rem] w-full overflow-hidden">
       <!-- Poussin : haut gauche -->
       <img
         src="/familiers/plume.png"
@@ -42,9 +42,6 @@ import Bouton from "../components/Bouton.astro";
     <div class="mt-10 flex flex-col items-center gap-4 px-6">
       <Bouton text="Commencer" url="/inscription" variant="beige" />
       <Bouton text="Se connecter" url="/connexion" variant="jaune" />
-      <button onclick="window.location.href='/inscription'"
-        >TEST INSCRIPTION</button
-      >
     </div>
 
     <script type="module">

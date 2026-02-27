@@ -1,0 +1,66 @@
+---
+const { titre, intro } = Astro.props;
+---
+
+<header class="mt-6 w-full">
+  <div class="flex items-center">
+    <img
+      id="familierImage"
+      src=""
+      alt="Ton familier"
+      class="w-24 h-24 object-contain"
+    />
+    <div>
+      <h1 id="headerTitle" class="text-xl text-left">{titre}</h1>
+      <p id="headerIntro" class="text-left">{intro}</p>
+    </div>
+  </div>
+
+  <script type="module" is:inline>
+    import pb from "/pocketbase/pb.ts";
+
+    const familierImage = document.getElementById("familierImage");
+    const headerTitle = document.getElementById("headerTitle");
+    const headerIntro = document.getElementById("headerIntro");
+
+    const familierMap = {
+      plume: "/familiers/plume.png",
+      sunny: "/familiers/sunny.png",
+      buzzy: "/familiers/buzzy.png",
+    };
+
+    const resolveKey = () => {
+      const fromAuth = pb.authStore?.model?.familier;
+      const fromStorage = localStorage.getItem("familier");
+      const raw = (fromAuth || fromStorage || "plume").toString().toLowerCase();
+      return familierMap[raw] ? raw : "plume";
+    };
+
+    if (familierImage) {
+      const key = resolveKey();
+      familierImage.src = familierMap[key];
+      familierImage.alt = `Familier ${key}`;
+    }
+
+    // Remplacer "..." par le pseudo et "(date_du_jour)" par la date
+    if (headerTitle && headerTitle.textContent.includes("...")) {
+      const pseudo = pb.authStore?.model?.pseudo || "";
+      headerTitle.textContent = headerTitle.textContent.replace("...", pseudo);
+    }
+
+    if (headerIntro && headerIntro.textContent.includes("(date_du_jour)")) {
+      const now = new Date();
+      const options = {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      };
+      const dateStr = now.toLocaleDateString("fr-FR", options);
+      headerIntro.textContent = headerIntro.textContent.replace(
+        "(date_du_jour)",
+        dateStr,
+      );
+    }
+  </script>
+</header>

@@ -9,7 +9,7 @@ import Bouton from "../../components/Bouton.astro";
     <img
       id="familierImage"
       src=""
-      alt="Ton familier"
+      alt="Apercu du familier"
       class="w-full h-full object-contain"
     />
   </div>
@@ -32,40 +32,124 @@ import Bouton from "../../components/Bouton.astro";
   </div>
   <div class="mt-20">
     <Bouton text="Continuer" url="/accueil" variant="beige" />
+  </div>
+
+  <script type="module" is:inline>
+    import pb from "/pocketbase/pb.ts";
+
+    const familierImage = document.getElementById("familierImage");
+    const familierName = document.getElementById("familierName");
+
+    const baseImages = {
+      plume: "/familiers/plume.png",
+      sunny: "/familiers/sunny.png",
+      buzzy: "/familiers/buzzy.png",
+    };
+
+    const familierNames = {
+      plume: "Plume",
+      sunny: "Sunny",
+      buzzy: "Buzzy",
+    };
+
+    const loadFamilier = async () => {
+      const familierFromStorage = localStorage.getItem("familier");
+      const fallbackKey = familierFromStorage
+        ? familierFromStorage.toLowerCase()
+        : "plume";
+
+      if (!pb.authStore.isValid || !pb.authStore.model) {
+        const safeKey = baseImages[fallbackKey] ? fallbackKey : "plume";
+        familierImage.src = baseImages[safeKey];
+        familierName.textContent = familierNames[safeKey] || "Ton familier";
+        return;
+      }
+
+      // Récupérer les données à jour depuis PocketBase
+      let user = pb.authStore.model;
+      try {
+        const userId = pb.authStore.model.id;
+        user = await pb.collection("users").getOne(userId);
+        console.log("User data:", user);
+        console.log("Customisation:", user.customisation);
+        console.log("Type customisation:", typeof user.customisation);
+      } catch (err) {
+        console.error("Erreur lors du chargement du profil:", err);
+      }
+
+      const rawFamilier = (user.familier || fallbackKey || "Plume")
+        .toString()
+        .toLowerCase();
+      const familierKey = baseImages[rawFamilier] ? rawFamilier : "plume";
+
+      // Charger l'image personnalisée si disponible
+      let imagePath = baseImages[familierKey];
+
+      // Parser customisation si c'est une string JSON
+      let customisation = user.customisation || {};
+      if (typeof customisation === "string") {
+        try {
+          customisation = JSON.parse(customisation);
+        } catch {
+          customisation = {};
+        }
+      }
+
+      console.log("Customisation après parsing:", customisation);
+      console.log("variantId:", customisation.variantId);
+
+      if (customisation && customisation.variantId) {
+        const variantId = String(customisation.variantId);
+        const variantIndex = parseInt(variantId.split("_")[1], 10) - 1;
+        console.log("variantIndex calculé:", variantIndex);
+        const variants = {
+          plume: [
+            "/familiers/plume.png",
+            "/familiers/plume2.png",
+            "/familiers/plume3.png",
+            "/familiers/plume4.png",
+            "/familiers/plume5.png",
+            "/familiers/plume6.png",
+            "/familiers/plume7.png",
+          ],
+          sunny: [
+            "/familiers/sunny.png",
+            "/familiers/sunny2.png",
+            "/familiers/sunny3.png",
+            "/familiers/sunny4.png",
+            "/familiers/sunny5.png",
+            "/familiers/sunny6.png",
+            "/familiers/sunny7.png",
+          ],
+          buzzy: [
+            "/familiers/buzzy.png",
+            "/familiers/buzzy2.png",
+            "/familiers/buzzy3.png",
+            "/familiers/buzzy4.png",
+            "/familiers/buzzy5.png",
+            "/familiers/buzzy6.png",
+            "/familiers/buzzy7.png",
+          ],
+        };
+
+        const list = variants[familierKey] || variants.plume;
+        imagePath =
+          list[Number.isFinite(variantIndex) ? variantIndex : 0] || list[0];
+        console.log("Image path finale:", imagePath);
+      }
+
+      familierImage.src = imagePath;
+      familierName.textContent = familierNames[familierKey] || "Ton familier";
+    };
+
+    const logoutButton = document.getElementById("logoutButton");
+    if (logoutButton) {
+      logoutButton.addEventListener("click", () => {
+        pb.authStore.clear();
+        window.location.href = "/";
+      });
+    }
+
+    loadFamilier();
+  </script>
 </LayoutNeutreProtege>
-
-<script type="module" is:inline>
-  import pb from "/pocketbase/pb.ts";
-
-  const familierName = document.getElementById("familierName");
-  const familierTitle = document.getElementById("familierTitle");
-  const familierImage = document.getElementById("familierImage");
-
-  const familierNameMap = {
-    plume: "Plume",
-    buzzy: "Buzzy",
-    sunny: "Sunny",
-    Plume: "Plume",
-    Buzzy: "Buzzy",
-    Sunny: "Sunny",
-  };
-
-  const baseImages = {
-    plume: "/familiers/plume.png",
-    buzzy: "/familiers/buzzy.png",
-    sunny: "/familiers/sunny.png",
-    Plume: "/familiers/plume.png",
-    Buzzy: "/familiers/buzzy.png",
-    Sunny: "/familiers/sunny.png",
-  };
-
-  if (pb.authStore.isValid && pb.authStore.model) {
-    const familier = pb.authStore.model.familier || "Plume";
-    const displayName = familierNameMap[familier] || familier;
-    const imagePath = baseImages[familier] || "/familiers/plume.png";
-
-    familierName.textContent = displayName;
-    familierTitle.textContent = displayName;
-    familierImage.src = imagePath;
-  }
-</script>

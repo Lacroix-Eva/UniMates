@@ -3,7 +3,11 @@ import LayoutNeutre from "../../layouts/LayoutNeutre.astro";
 import Bouton from "../../components/Bouton.astro";
 ---
 
-<LayoutNeutre nomPage="Inscription - Informations personnelles" titre_page="Inscription" intro_page="Renseigne tes informations pour continuer">
+<LayoutNeutre
+  nomPage="Inscription - Informations personnelles"
+  titre_page="Inscription"
+  intro_page="Renseigne tes informations pour continuer"
+>
   <form id="registerForm" class="mt-15 space-y-6 w-full max-w-sm">
     <input
       name="pseudo"
@@ -61,7 +65,7 @@ import Bouton from "../../components/Bouton.astro";
 
     // Rediriger si déjà connecté
     if (pb.authStore.isValid) {
-      window.location.href = "inscription/personnalisation";
+      window.location.href = "/inscription/personnalisation";
     }
 
     const form = document.getElementById("registerForm");
@@ -107,7 +111,7 @@ import Bouton from "../../components/Bouton.astro";
         localStorage.removeItem("familier");
 
         // Rediriger vers le tableau de bord ou page suivante
-        location.href = "inscription/personnalisation";
+        location.href = "/inscription/personnalisation";
       } catch (err) {
         let errorMessage = "Échec de l'inscription";
 
@@ -168,7 +172,7 @@ import Bouton from "../../components/Bouton.astro";
         }
 
         localStorage.removeItem("familier");
-        location.href = "inscription/personnalisation";
+        location.href = "/inscription/personnalisation";
       } catch (err) {
         document.getElementById("msg").textContent =
           "Échec de connexion Google";

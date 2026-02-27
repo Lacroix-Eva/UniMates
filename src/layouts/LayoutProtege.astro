@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import Header from "../components/Header.astro";
 const { ...item } = Astro.props;
 import Navigation from "../components/Navigation.astro";
 ---
@@ -15,6 +16,7 @@ import Navigation from "../components/Navigation.astro";
     <title>{item.nomPage} | UniMates</title>
   </head>
   <body>
+    <Header titre={item.titre_page} intro={item.intro_page} />
     <slot />
     <Navigation />
     <script type="module" is:inline>
