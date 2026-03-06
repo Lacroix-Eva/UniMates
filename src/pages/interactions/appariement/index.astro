@@ -9,20 +9,44 @@ import Bouton from "../../../components/Bouton.astro";
   intro_page="Choisis avec qui tu veux discuter"
 >
   <div class="w-full max-w-sm mx-auto space-y-6">
+    <!-- Conversations actives -->
+    <div id="activeConversationsSection" class="hidden space-y-3">
+      <h2 class="text-center">Tes conversations</h2>
+      <div id="activeConversationsList" class="space-y-3">
+        <!-- Les conversations actives seront ajoutées ici -->
+      </div>
+    </div>
+
+    <!-- Séparateur -->
+    <div id="separator" class="hidden border-t-2 border-base-content/10"></div>
+
     <!-- Status Card -->
-    <div id="statusCard" class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-4">
+    <div
+      id="statusCard"
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-4"
+    >
       <div class="flex flex-col items-center gap-4">
         <div id="loadingSpinner" class="w-16 h-16">
-          <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-accent"></div>
+          <div
+            class="animate-spin rounded-full h-16 w-16 border-b-4 border-accent"
+          >
+          </div>
         </div>
-        
+
         <div class="text-center">
-          <h3 id="statusTitle" class="font-jua text-lg mb-2">Recherche en cours</h3>
+          <h3 id="statusTitle" class="font-jua text-lg mb-2">
+            Recherche en cours
+          </h3>
           <p id="statusMessage" class="text-sm opacity-80">
             Nous cherchons des personnes avec le même mood...
           </p>
         </div>
       </div>
+    </div>
+
+    <!-- Titre pour nouvelles interactions -->
+    <div id="newInteractionsTitle" class="hidden">
+      <h2 class="text-center">Interactions possibles ✨</h2>
     </div>
 
     <!-- Liste des personnes disponibles -->
@@ -31,15 +55,18 @@ import Bouton from "../../../components/Bouton.astro";
     </div>
 
     <!-- Message si aucune personne -->
-    <div id="noPeopleMessage" class="hidden bg-base-100 border-2 border-base-content/10 rounded-3xl p-4">
-      <p class="text-sm text-center opacity-70">
+    <div
+      id="noPeopleMessage"
+      class="hidden bg-base-100 border-2 border-base-content/10 rounded-3xl p-4"
+    >
+      <p class="text-center opacity-70">
         Personne ne partage ton mood en ce moment. Réessaie plus tard ! 💭
       </p>
     </div>
 
     <!-- Info Card -->
     <div class="bg-base-100 border-2 border-base-content/10 rounded-3xl p-4">
-      <p class="text-sm text-center opacity-70">
+      <p class="text-center opacity-70">
         💚 Les personnes affichées partagent le même mood que toi
       </p>
     </div>
@@ -70,7 +97,17 @@ import Bouton from "../../../components/Bouton.astro";
   const statusMessage = document.getElementById("statusMessage");
   const peopleList = document.getElementById("peopleList");
   const noPeopleMessage = document.getElementById("noPeopleMessage");
-  const toggleAvailabilityButton = document.getElementById("toggleAvailabilityButton");
+  const toggleAvailabilityButton = document.getElementById(
+    "toggleAvailabilityButton",
+  );
+  const activeConversationsSection = document.getElementById(
+    "activeConversationsSection",
+  );
+  const activeConversationsList = document.getElementById(
+    "activeConversationsList",
+  );
+  const newInteractionsTitle = document.getElementById("newInteractionsTitle");
+  const separator = document.getElementById("separator");
 
   let myMatchRequest = null;
   let myMood = null;
@@ -96,40 +133,196 @@ import Bouton from "../../../components/Bouton.astro";
     return "Personne anonyme";
   };
 
+  // Charger les conversations actives avec des messages
+  const loadActiveConversations = async () => {
+    try {
+      const userId = pb.authStore.model.id;
+
+      // Récupérer toutes les conversations actives de l'utilisateur
+      const conversations = await pb.collection("conversations").getFullList({
+        filter: `(user1 = "${userId}" || user2 = "${userId}") && status = "active"`,
+        sort: "-updated",
+      });
+
+      console.log("💬 Conversations trouvées:", conversations);
+
+      // Pour chaque conversation, vérifier s'il y a des messages
+      const conversationsWithMessages = [];
+
+      for (const conv of conversations) {
+        const messages = await pb
+          .collection("conversation_messages")
+          .getList(1, 1, {
+            filter: `conversation = "${conv.id}"`,
+            sort: "-created",
+          });
+
+        if (messages.items.length > 0) {
+          // Récupérer le timestamp de la dernière lecture
+          const lastReadTime = localStorage.getItem(`lastRead_${conv.id}`);
+          
+          // Compter les messages non lus (reçus après la dernière lecture)
+          let unreadCount = 0;
+          if (lastReadTime) {
+            const unreadMessages = await pb.collection("conversation_messages").getList(1, 100, {
+              filter: `conversation = "${conv.id}" && sender != "${userId}" && created > "${lastReadTime}"`,
+              sort: "-created",
+            });
+            unreadCount = unreadMessages.totalItems;
+          } else {
+            // Si jamais ouvert, compter tous les messages de l'autre
+            const unreadMessages = await pb.collection("conversation_messages").getList(1, 100, {
+              filter: `conversation = "${conv.id}" && sender != "${userId}"`,
+              sort: "-created",
+            });
+            unreadCount = unreadMessages.totalItems;
+          }
+
+          conversationsWithMessages.push({
+            conversation: conv,
+            lastMessage: messages.items[0],
+            unreadCount: unreadCount,
+          });
+        }
+      }
+
+      console.log("📨 Conversations avec messages:", conversationsWithMessages);
+
+      // Mettre à jour le compteur total de messages non lus
+      const unreadMessages = {};
+
+      if (conversationsWithMessages.length === 0) {
+        activeConversationsSection.classList.add("hidden");
+        separator.classList.add("hidden");
+        
+        // Pas de conversations, donc aucun message non lu
+        localStorage.setItem("unreadMessages", JSON.stringify({}));
+        window.dispatchEvent(new Event("storage"));
+        return;
+      }
+
+      // Afficher les conversations
+      activeConversationsSection.classList.remove("hidden");
+      activeConversationsList.innerHTML = "";
+
+      for (const { conversation, lastMessage, unreadCount } of conversationsWithMessages) {
+        // Déterminer l'autre utilisateur
+        const otherUserId =
+          conversation.user1 === userId
+            ? conversation.user2
+            : conversation.user1;
+
+        // Charger les infos de l'autre utilisateur
+        let displayName = "Personne anonyme";
+        try {
+          const otherUser = await pb.collection("users").getOne(otherUserId);
+          displayName = resolveDisplayName(otherUser);
+        } catch (err) {
+          console.error("❌ Erreur en chargeant l'utilisateur:", err);
+        }
+
+        const lastMessageTime = new Date(lastMessage.created).toLocaleString(
+          "fr-FR",
+          {
+            day: "numeric",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          },
+        );
+
+        // Vérifier s'il y a des messages non lus
+        const isUnread = unreadCount > 0;
+
+        console.log(`📬 Conversation ${conversation.id}:`, {
+          unreadCount,
+          isUnread,
+          lastReadTime: localStorage.getItem(`lastRead_${conversation.id}`),
+        });
+
+        if (isUnread) {
+          unreadMessages[conversation.id] = unreadCount;
+        }
+
+        // Créer la carte de conversation
+        const conversationCard = document.createElement("div");
+        conversationCard.className =
+          `bg-gradient-custom border-2 rounded-4xl shadow-md p-4 cursor-pointer hover:bg-info/20 transition-all ${isUnread ? 'border-accent border-4' : ''}`;
+        conversationCard.innerHTML = `
+          <div class="flex justify-between items-center gap-3">
+            <div class="min-w-0 flex-1">
+              <h3 class="truncate ${isUnread ? 'font-bold' : ''}">${escapeHtml(displayName)}</h3>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              ${isUnread ? '<span class="w-3 h-3 bg-accent rounded-full"></span>' : ''}
+              <p class="text-xs opacity-50">${lastMessageTime}</p>
+            </div>
+          </div>
+        `;
+
+        conversationCard.addEventListener("click", () => {
+          // Marquer comme lu avant de naviguer
+          localStorage.setItem(`lastRead_${conversation.id}`, new Date().toISOString());
+          sessionStorage.setItem("conversationId", conversation.id);
+          window.location.href = "/interactions/conversation";
+        });
+
+        activeConversationsList.appendChild(conversationCard);
+      }
+
+      // Sauvegarder les messages non lus dans localStorage
+      console.log("💾 Sauvegarde des messages non lus:", unreadMessages);
+      localStorage.setItem("unreadMessages", JSON.stringify(unreadMessages));
+      window.dispatchEvent(new Event("storage"));
+
+      // Le séparateur sera géré par findAvailablePeople
+    } catch (err) {
+      console.error("❌ Erreur lors du chargement des conversations:", err);
+    }
+  };
+
   // Vérifier si l'utilisateur a un mood aujourd'hui
   const checkTodayMood = async () => {
     try {
       const userId = pb.authStore.model.id;
-      
+
       // Vérifier l'état de l'utilisateur courant
       const currentUser = await pb.collection("users").getOne(userId);
       console.log("👤 Utilisateur courant:", {
         id: currentUser.id,
         pseudo: currentUser.pseudo,
         anonymous: currentUser.anonymous,
-        typeAnonymous: typeof currentUser.anonymous
+        typeAnonymous: typeof currentUser.anonymous,
       });
-      
+
       const now = new Date();
-      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      
+      const startOfDay = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        0,
+        0,
+        0,
+      );
+
       const moods = await pb.collection("moods").getFullList({
         filter: `user = "${userId}"`,
         sort: "-created",
       });
 
       console.log("✅ Tous les moods de l'user:", moods);
-      
+
       const todayMoods = moods.filter((mood) => {
         const createdAt = new Date(mood.created);
         return createdAt >= startOfDay;
       });
-      
+
       console.log("📅 Moods du jour:", todayMoods);
 
       if (todayMoods.length === 0) {
         statusTitle.textContent = "Aucun mood enregistré";
-        statusMessage.textContent = "Enregistre ton mood du jour avant de chercher une interaction";
+        statusMessage.textContent =
+          "Enregistre ton mood du jour avant de chercher une interaction";
         loadingSpinner.style.display = "none";
         setTimeout(() => {
           window.location.href = "/mood/enregistrer";
@@ -152,10 +345,12 @@ import Bouton from "../../../components/Bouton.astro";
       console.log("🔍 Mood à enregistrer:", mood.mood);
 
       // Vérifier si une request existe déjà
-      const existingRequests = await pb.collection("match_requests").getFullList({
-        filter: `user = "${userId}" && status = "waiting"`,
-        sort: "-created",
-      });
+      const existingRequests = await pb
+        .collection("match_requests")
+        .getFullList({
+          filter: `user = "${userId}" && status = "waiting"`,
+          sort: "-created",
+        });
 
       console.log("📋 Match requests existantes:", existingRequests);
 
@@ -176,7 +371,10 @@ import Bouton from "../../../components/Bouton.astro";
             status: "waiting",
           });
 
-        console.log("🔄 Demande existante mise à jour avec le nouveau mood:", updatedRequest);
+        console.log(
+          "🔄 Demande existante mise à jour avec le nouveau mood:",
+          updatedRequest,
+        );
         return updatedRequest;
       }
 
@@ -201,8 +399,10 @@ import Bouton from "../../../components/Bouton.astro";
 
     try {
       const userId = pb.authStore.model.id;
-      
-      console.log(`🔎 Recherche des personnes avec mood = "${myMatchRequest.mood}"`);
+
+      console.log(
+        `🔎 Recherche des personnes avec mood = "${myMatchRequest.mood}"`,
+      );
 
       // Chercher d'autres requests en attente avec le même mood
       let availablePeople = await pb.collection("match_requests").getFullList({
@@ -255,10 +455,19 @@ import Bouton from "../../../components/Bouton.astro";
       if (availablePeople.length === 0) {
         // Aucune personne disponible
         noPeopleMessage.classList.remove("hidden");
+        newInteractionsTitle.classList.add("hidden");
+        separator.classList.add("hidden");
       } else {
         // Afficher la liste des personnes
         noPeopleMessage.classList.add("hidden");
+        newInteractionsTitle.classList.remove("hidden");
         peopleList.classList.remove("hidden");
+
+        // Afficher le séparateur si des conversations actives sont visibles
+        if (!activeConversationsSection.classList.contains("hidden")) {
+          separator.classList.remove("hidden");
+        }
+
         peopleList.innerHTML = "";
         let visiblePeopleCount = 0;
 
@@ -279,12 +488,13 @@ import Bouton from "../../../components/Bouton.astro";
           const displayName = resolveDisplayName(userInfo);
 
           const personCard = document.createElement("div");
-          personCard.className = "bg-gradient-custom border-2 rounded-4xl shadow-md p-4 cursor-pointer hover:bg-info/20 transition-all";
+          personCard.className =
+            "bg-gradient-custom border-2 rounded-4xl shadow-md p-4 cursor-pointer hover:bg-info/20 transition-all";
           personCard.innerHTML = `
             <div class="flex justify-between ">
               <div>
-                <h3 class="font-bold">${escapeHtml(displayName)}</h3>
-                <p class="text-sm opacity-70">Mood: ${person.mood}</p>
+                <h3>${escapeHtml(displayName)}</h3>
+                <p class="opacity-70">Mood: ${person.mood}</p>
               </div>
               <div class="text-2xl flex items-center">💬</div>
             </div>
@@ -298,6 +508,8 @@ import Bouton from "../../../components/Bouton.astro";
         if (visiblePeopleCount === 0) {
           peopleList.classList.add("hidden");
           noPeopleMessage.classList.remove("hidden");
+          newInteractionsTitle.classList.add("hidden");
+          separator.classList.add("hidden");
         }
       }
     } catch (err) {
@@ -316,9 +528,11 @@ import Bouton from "../../../components/Bouton.astro";
       console.log("🎉 Démarrage d'une conversation avec:", otherPerson);
 
       // Vérifier si une conversation existe déjà entre ces deux personnes
-      const existingConversations = await pb.collection("conversations").getFullList({
-        filter: `((user1 = "${userId}" && user2 = "${otherPerson.user}") || (user1 = "${otherPerson.user}" && user2 = "${userId}")) && status = "active"`,
-      });
+      const existingConversations = await pb
+        .collection("conversations")
+        .getFullList({
+          filter: `((user1 = "${userId}" && user2 = "${otherPerson.user}") || (user1 = "${otherPerson.user}" && user2 = "${userId}")) && status = "active"`,
+        });
 
       let conversation;
       if (existingConversations.length > 0) {
@@ -334,7 +548,7 @@ import Bouton from "../../../components/Bouton.astro";
         });
 
         console.log("✨ Conversation créée:", conversation);
-        
+
         // NE PAS mettre à jour le status - on les garde en "waiting" pour qu'ils restent visibles
       }
 
@@ -355,7 +569,8 @@ import Bouton from "../../../components/Bouton.astro";
     myMatchRequest = await getOrCreateMatchRequest(myMood);
     if (!myMatchRequest) {
       statusTitle.textContent = "Erreur";
-      statusMessage.textContent = "Une erreur est survenue. Réessaie plus tard.";
+      statusMessage.textContent =
+        "Une erreur est survenue. Réessaie plus tard.";
       loadingSpinner.style.display = "none";
       return;
     }
@@ -384,12 +599,16 @@ import Bouton from "../../../components/Bouton.astro";
 
         // Mettre à jour le bouton et le message
         toggleAvailabilityButton.textContent = "Reprendre les interactions";
-        toggleAvailabilityButton.classList.remove("bg-error/20", "border-error");
+        toggleAvailabilityButton.classList.remove(
+          "bg-error/20",
+          "border-error",
+        );
         toggleAvailabilityButton.classList.add("bg-info/20", "border-info");
 
         statusCard.classList.remove("hidden");
         statusTitle.textContent = "Interactions en pause";
-        statusMessage.textContent = "Tu ne figures pas dans les recherches des autres pour le moment";
+        statusMessage.textContent =
+          "Tu ne figures pas dans les recherches des autres pour le moment";
         loadingSpinner.style.display = "none";
         peopleList.classList.add("hidden");
         noPeopleMessage.classList.add("hidden");
@@ -414,14 +633,24 @@ import Bouton from "../../../components/Bouton.astro";
         console.log("▶️ Interactions reprises");
 
         // Mettre à jour le bouton
-        toggleAvailabilityButton.textContent = "Mettre en pause les interactions";
-        toggleAvailabilityButton.classList.remove("bg-info/20", "hover:bg-info/30", "border-info");
-        toggleAvailabilityButton.classList.add("bg-error/20", "hover:bg-error/30", "border-error");
+        toggleAvailabilityButton.textContent =
+          "Mettre en pause les interactions";
+        toggleAvailabilityButton.classList.remove(
+          "bg-info/20",
+          "hover:bg-info/30",
+          "border-info",
+        );
+        toggleAvailabilityButton.classList.add(
+          "bg-error/20",
+          "hover:bg-error/30",
+          "border-error",
+        );
 
         // Relancer la recherche
         statusCard.classList.remove("hidden");
         statusTitle.textContent = "Recherche en cours";
-        statusMessage.textContent = "Nous cherchons des personnes avec le même mood...";
+        statusMessage.textContent =
+          "Nous cherchons des personnes avec le même mood...";
         loadingSpinner.style.display = "block";
         peopleList.classList.add("hidden");
         noPeopleMessage.classList.add("hidden");
@@ -436,6 +665,9 @@ import Bouton from "../../../components/Bouton.astro";
   // Charger et appliquer l'état des interactions sauvegardé
   const loadInteractionState = async () => {
     try {
+      // Charger les conversations actives en premier
+      await loadActiveConversations();
+
       const userId = pb.authStore.model.id;
       const user = await pb.collection("users").getOne(userId);
 
@@ -446,21 +678,30 @@ import Bouton from "../../../components/Bouton.astro";
         // L'utilisateur a mis en pause les interactions
         isAvailable = false;
         toggleAvailabilityButton.textContent = "Reprendre les interactions";
-        toggleAvailabilityButton.classList.remove("bg-error/20", "border-error");
+        toggleAvailabilityButton.classList.remove(
+          "bg-error/20",
+          "border-error",
+        );
         toggleAvailabilityButton.classList.add("bg-info/20", "border-info");
 
         statusCard.classList.remove("hidden");
         statusTitle.textContent = "Interactions en pause";
-        statusMessage.textContent = "Tu ne figures pas dans les recherches des autres pour le moment";
+        statusMessage.textContent =
+          "Tu ne figures pas dans les recherches des autres pour le moment";
         loadingSpinner.style.display = "none";
         peopleList.classList.add("hidden");
         noPeopleMessage.classList.add("hidden");
+        newInteractionsTitle.classList.add("hidden");
+        separator.classList.add("hidden");
       } else {
         // Lancer la recherche normalement
         await startMatching();
       }
     } catch (err) {
-      console.error("❌ Erreur lors du chargement de l'état des interactions:", err);
+      console.error(
+        "❌ Erreur lors du chargement de l'état des interactions:",
+        err,
+      );
       // En cas d'erreur, continuer normalement
       await startMatching();
     }
@@ -468,11 +709,34 @@ import Bouton from "../../../components/Bouton.astro";
 
   // Lancer au chargement
   loadInteractionState();
+
+  // Écouter les nouveaux messages pour mettre à jour la liste
+  const subscribeToNewMessages = () => {
+    if (!pb.authStore.isValid) return;
+    
+    const userId = pb.authStore.model.id;
+    
+    pb.collection("conversation_messages").subscribe("*", async (e) => {
+      if (e.action === "create" && e.record.sender !== userId) {
+        // Un nouveau message est arrivé dans une de nos conversations
+        console.log("📬 Nouveau message détecté dans appariement");
+        
+        // Recharger les conversations pour mettre à jour le badge et les compteurs
+        await loadActiveConversations();
+      }
+    });
+  };
+
+  // Démarrer l'écoute des messages
+  subscribeToNewMessages();
+
 </script>
 
 <style>
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
   .animate-spin {
     animation: spin 1s linear infinite;

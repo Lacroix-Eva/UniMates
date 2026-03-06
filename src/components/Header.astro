@@ -4,12 +4,14 @@ const { titre, intro } = Astro.props;
 
 <header class="my-6 w-full">
   <div class="flex items-center -ml-6">
-    <img
+    <a href="/">
+      <img
       id="familierImage"
       src=""
       alt="Ton familier"
-      class="w-24 h-24 object-contain"
-    />
+      class="w-24 h-24 object-contain cursor-pointer"
+      />
+    </a>
     <div>
       <h1 id="headerTitle" class="text-left">{titre}</h1>
       <p id="headerIntro" class="text-left">{intro}</p>

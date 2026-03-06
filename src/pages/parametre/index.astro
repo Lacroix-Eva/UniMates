@@ -37,6 +37,23 @@ import Bouton from "../../components/Bouton.astro";
       </div>
     </div>
 
+    <!-- Section Notifications -->
+    <div class="bg-base-300 border-2 rounded-4xl shadow-md p-4 mt-4">
+      <h2 class="mb-3 text-center">Notifications</h2>
+      <div class="flex justify-between">
+        <div>
+          <p class="font-semibold">Son de notification</p>
+          <p class="text-sm opacity-70">Jouer un son quand tu reçois un message</p>
+        </div>
+        <input
+          type="checkbox"
+          id="notificationSoundToggle"
+          class="toggle toggle-accent"
+          checked
+        />
+      </div>
+    </div>
+
     <div class="mt-8 flex flex-col items-center gap-3">
       <Bouton text="Retour à l'accueil" url="/accueil" variant="jaune" />
     </div>
@@ -48,11 +65,13 @@ import Bouton from "../../components/Bouton.astro";
 
     const anonymousToggle = document.getElementById("anonymousToggle");
     const interactionsIntroToggle = document.getElementById("interactionsIntroToggle");
+    const notificationSoundToggle = document.getElementById("notificationSoundToggle");
     const INTERACTIONS_INTRO_KEY = "interactionsShowIntro";
 
     const state = {
       anonymous: true,
       InteractionsIntro: false,
+      notificationSound: true,
     };
 
     const loadSettings = async () => {
@@ -86,6 +105,13 @@ import Bouton from "../../components/Bouton.astro";
         );
         if (interactionsIntroToggle) {
           interactionsIntroToggle.checked = state.InteractionsIntro;
+        }
+
+        // Charger le statut du son de notification (par défaut true)
+        const savedSoundSetting = localStorage.getItem("notificationSoundEnabled");
+        state.notificationSound = savedSoundSetting !== "false";
+        if (notificationSoundToggle) {
+          notificationSoundToggle.checked = state.notificationSound;
         }
       } catch (err) {
         console.error("Erreur lors du chargement des paramètres:", err);
@@ -132,6 +158,13 @@ import Bouton from "../../components/Bouton.astro";
       interactionsIntroToggle.addEventListener("change", () => {
         state.InteractionsIntro = interactionsIntroToggle.checked;
         saveSettings();
+      });
+    }
+
+    if (notificationSoundToggle) {
+      notificationSoundToggle.addEventListener("change", () => {
+        state.notificationSound = notificationSoundToggle.checked;
+        localStorage.setItem("notificationSoundEnabled", String(state.notificationSound));
       });
     }
 
