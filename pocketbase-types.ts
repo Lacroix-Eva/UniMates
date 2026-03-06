@@ -155,6 +155,7 @@ export type UsersRecord<Tcustomisation = unknown, Tpurchases = unknown> = {
 	emailVisibility?: boolean
 	familier?: UsersFamilierOptions
 	id: string
+	interactionsActive?: boolean
 	password: string
 	points?: number
 	pseudo?: string

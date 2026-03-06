@@ -1,0 +1,190 @@
+---
+import LayoutProtege from "../../../layouts/LayoutProtege.astro";
+---
+
+<LayoutProtege
+  nomPage="Enregistrer mon mood"
+  titre_page="Comment te sens-tu ?"
+  intro_page="Prends un moment pour toi"
+>
+  <div class="w-full max-w-sm mx-auto space-y-6">
+    <form id="moodForm" class="space-y-6">
+      <div class="bg-base-300 border-2 rounded-4xl shadow-md p-6 space-y-4">
+        <h3 class="font-balsamiq-sans font-bold text-lg text-center">Ton humeur du moment</h3>
+        
+        <div class="grid grid-cols-3 gap-3">
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="mood"
+              value="excellent"
+              class="sr-only peer"
+              required
+            />
+            <div
+              class="bg-base-100 border-2 border-base-content/20 rounded-3xl p-4 flex flex-col items-center gap-2 transition-all peer-checked:border-success peer-checked:bg-success/10 active:scale-95"
+            >
+              <span class="text-4xl">😊</span>
+              <span class="text-xs font-semibold">Excellent</span>
+            </div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="mood"
+              value="bien"
+              class="sr-only peer"
+              required
+            />
+            <div
+              class="bg-base-100 border-2 border-base-content/20 rounded-3xl p-4 flex flex-col items-center gap-2 transition-all peer-checked:border-primary peer-checked:bg-primary/10 active:scale-95"
+            >
+              <span class="text-4xl">🙂</span>
+              <span class="text-xs font-semibold">Bien</span>
+            </div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="mood"
+              value="neutre"
+              class="sr-only peer"
+              required
+            />
+            <div
+              class="bg-base-100 border-2 border-base-content/20 rounded-3xl p-4 flex flex-col items-center gap-2 transition-all peer-checked:border-warning peer-checked:bg-warning/10 active:scale-95"
+            >
+              <span class="text-4xl">😐</span>
+              <span class="text-xs font-semibold">Neutre</span>
+            </div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="mood"
+              value="moyen"
+              class="sr-only peer"
+              required
+            />
+            <div
+              class="bg-base-100 border-2 border-base-content/20 rounded-3xl p-4 flex flex-col items-center gap-2 transition-all peer-checked:border-accent peer-checked:bg-accent/10 active:scale-95"
+            >
+              <span class="text-4xl">😕</span>
+              <span class="text-xs font-semibold">Moyen</span>
+            </div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input
+              type="radio"
+              name="mood"
+              value="difficile"
+              class="sr-only peer"
+              required
+            />
+            <div
+              class="bg-base-100 border-2 border-base-content/20 rounded-3xl p-4 flex flex-col items-center gap-2 transition-all peer-checked:border-error peer-checked:bg-error/10 active:scale-95"
+            >
+              <span class="text-4xl">😢</span>
+              <span class="text-xs font-semibold">Difficile</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Note optionnelle -->
+      <div class="bg-base-300 border-2 rounded-4xl shadow-md p-6 space-y-3">
+        <label for="note" class="font-semibold text-left block">
+          Ajoute une note (optionnel)
+        </label>
+        <textarea
+          id="note"
+          name="note"
+          rows="3"
+          placeholder="Qu'est-ce qui t'a marqué aujourd'hui ?"
+          class="w-full bg-base-100 border-2 rounded-3xl shadow-sm px-4 py-3 text-base-content placeholder:text-base-content/60 resize-none"
+        ></textarea>
+      </div>
+
+      <!-- Message d'erreur/succès -->
+      <p id="message" class="text-center text-sm font-semibold"></p>
+
+      <!-- Boutons -->
+      <div class="space-y-3">
+        <button
+          type="submit"
+          id="submitButton"
+          class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-10 border-2 rounded-4xl shadow-md w-full transition-all duration-300 ease-in-out transform bg-base-300 active:bg-info cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Enregistrer
+        </button>
+
+        <a
+          href="/accueil"
+          class="inline-flex items-center justify-center text-base-content font-balsamiq-sans text-base py-2 px-8 w-full transition-all opacity-70 hover:opacity-100"
+        >
+          Retour
+        </a>
+      </div>
+    </form>
+  </div>
+</LayoutProtege>
+
+<script type="module" is:inline>
+  import pb from "/pocketbase/pb.ts";
+
+  // Rediriger si pas connecté
+  if (!pb.authStore.isValid) {
+    window.location.href = "/connexion";
+  }
+
+  const form = document.getElementById("moodForm");
+  const message = document.getElementById("message");
+  const submitButton = document.getElementById("submitButton");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const mood = formData.get("mood");
+    const note = formData.get("note");
+
+    if (!mood) {
+      message.textContent = "Merci de sélectionner ton humeur";
+      message.className = "text-center text-sm font-semibold text-error";
+      return;
+    }
+
+    submitButton.disabled = true;
+    message.textContent = "Enregistrement...";
+    message.className = "text-center text-sm font-semibold text-info";
+
+    try {
+      const userId = pb.authStore.model.id;
+
+      // Créer l'enregistrement de mood
+      await pb.collection("moods").create({
+        user: userId,
+        mood: mood,
+        note: note || "",
+      });
+
+      message.textContent = "✨ Mood enregistré avec succès !";
+      message.className = "text-center text-sm font-semibold text-success";
+
+      // Rediriger vers l'accueil après 1.5s
+      setTimeout(() => {
+        window.location.href = "/accueil";
+      }, 1500);
+    } catch (err) {
+      console.error("Erreur lors de l'enregistrement:", err);
+      message.textContent =
+        "Une erreur est survenue. Réessaie dans un instant.";
+      message.className = "text-center text-sm font-semibold text-error";
+      submitButton.disabled = false;
+    }
+  });
+</script>

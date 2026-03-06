@@ -45,7 +45,6 @@
 
 @theme {
     /* font */
-    --font-jua: 'Jua', sans-serif;
     --font-kantumruy-pro: 'Kantumruy Pro', sans-serif;
     --font-balsamiq-sans: 'Balsamiq Sans', cursive;
     --font-quicksand: 'Quicksand', sans-serif;
@@ -61,27 +60,33 @@
     h2,
     h3,
     h4 {
-        @apply font-jua font-extrabold leading-[160%];
+        @apply font-balsamiq-sans font-extrabold leading-[160%];
     }
 
     h1 {
-        @apply text-center text-4xl;
+        @apply text-center text-2xl;
 
     }
 
     h2 {
-        @apply text-3xl;
-    }
-
-    h3 {
-        @apply text-2xl;
-    }
-
-    h4 {
         @apply text-xl;
     }
 
+    h3 {
+        @apply text-lg;
+    }
+
+    h4 {
+        @apply text-base;
+    }
+
     p {
-        @apply font-kantumruy-pro text-lg text-center;
+        @apply font-kantumruy-pro text-base text-center;
+    }
+}
+
+@layer utilities {
+    .bg-gradient-custom {
+        @apply bg-gradient-to-b from-base-200 to-[#FFE6BB];
     }
 }

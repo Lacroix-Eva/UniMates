@@ -1,0 +1,349 @@
+---
+// Configuration pour Astro - route côté client
+export const prerender = false;
+
+import LayoutProtege from "../../../layouts/LayoutProtege.astro";
+---
+
+<LayoutProtege nomPage="Conversation" titre_page="Chat avec ..." intro_page="Mood partagé: ...">
+  <div class="w-full max-w-sm mx-auto flex flex-col pb-32">
+    <!-- Messages -->
+    <div
+      id="messagesContainer"
+      class="flex-1 overflow-y-auto p-4 space-y-4 bg-base-100 mb-20"
+    >
+      <div class="text-center opacity-50 py-8">
+        <p>Chargement des messages...</p>
+      </div>
+    </div>
+
+    <!-- Input - Fixed en bas -->
+    <div class="fixed bottom-20 left-0 right-0 bg-base-200 border-t-2 p-4 z-40">
+      <div class="w-full max-w-sm mx-auto">
+        <div class="flex gap-2">
+          <input
+            id="messageInput"
+            type="text"
+            placeholder="Écris un message..."
+            class="input input-bordered input-sm flex-1"
+            maxlength="500"
+          />
+          <button
+            id="sendButton"
+            class="btn btn-sm btn-accent"
+            disabled
+          >
+            Envoyer
+          </button>
+        </div>
+        <p id="charCount" class="text-xs opacity-50 mt-1 text-right">0/500</p>
+      </div>
+    </div>
+  </div>
+</LayoutProtege>
+
+<script type="module" is:inline>
+  import pb from "/pocketbase/pb.ts";
+
+  // Récupérer l'ID de la conversation depuis sessionStorage
+  const conversationId = sessionStorage.getItem("conversationId");
+  
+  const userId = pb.authStore.model?.id;
+  const messagesContainer = document.getElementById("messagesContainer");
+  const messageInput = document.getElementById("messageInput");
+  const sendButton = document.getElementById("sendButton");
+  const charCount = document.getElementById("charCount");
+  const closeButton = document.getElementById("closeButton");
+  const conversationTitle = document.getElementById("conversationTitle");
+  const conversationMood = document.getElementById("conversationMood");
+  const headerTitle = document.getElementById("headerTitle");
+  const headerIntro = document.getElementById("headerIntro");
+
+  let otherUserId = null;
+  let conversation = null;
+
+  const updateConversationTitles = (displayName) => {
+    const title = `Chat avec ${displayName}`;
+
+    if (conversationTitle) {
+      conversationTitle.textContent = title;
+    }
+
+    if (headerTitle) {
+      headerTitle.textContent = title;
+    }
+  };
+
+  const updateConversationMood = (mood) => {
+    const moodText = `Mood partagé: ${mood}`;
+
+    if (conversationMood) {
+      conversationMood.textContent = moodText;
+    }
+
+    if (headerIntro) {
+      headerIntro.textContent = moodText;
+    }
+  };
+
+  const resolveDisplayName = (userInfo) => {
+    if (!userInfo) return "Personne anonyme";
+    if (userInfo.anonymous === true) return "Personne anonyme";
+
+    const pseudo = (userInfo.pseudo || "").toString().trim();
+    if (pseudo) return pseudo;
+
+    const username = (userInfo.username || "").toString().trim();
+    if (username) return username;
+
+    return "Personne anonyme";
+  };
+
+  // Rediriger si pas connecté
+  if (!pb.authStore.isValid) {
+    window.location.href = "/connexion";
+  }
+
+  // Vérifier si on a un ID de conversation
+  if (!conversationId) {
+    messagesContainer.innerHTML = `
+      <div class="alert alert-warning">
+        <p>Aucune conversation sélectionnée</p>
+      </div>
+    `;
+  }
+
+  // Charger la conversation
+  const loadConversation = async () => {
+    try {
+      console.log("📱 Chargement de la conversation:", conversationId);
+      
+      conversation = await pb.collection("conversations").getOne(conversationId);
+      console.log("📱 Conversation:", conversation);
+
+      // Vérifier que l'utilisateur a le droit d'accéder à cette conversation
+      if (conversation.user1 !== userId && conversation.user2 !== userId) {
+        messagesContainer.innerHTML = `
+          <div class="alert alert-error">
+            <p>Tu n'as pas accès à cette conversation</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Déterminer qui est l'autre utilisateur
+      otherUserId =
+        conversation.user1 === userId ? conversation.user2 : conversation.user1;
+
+      // Charger les infos de l'autre utilisateur
+      try {
+        const otherUser = await pb.collection("users").getOne(otherUserId);
+        console.log("🔍 Débogage utilisateur:", {
+          anonymous: otherUser.anonymous,
+          pseudo: otherUser.pseudo,
+          typeAnonymous: typeof otherUser.anonymous
+        });
+        
+        const displayName = resolveDisplayName(otherUser);
+        updateConversationTitles(displayName);
+      } catch (err) {
+        console.error("❌ Erreur en chargeant l'autre utilisateur:", err);
+        updateConversationTitles("Personne anonyme");
+      }
+
+      // Afficher le mood de la conversation
+      updateConversationMood(conversation.mood);
+
+      // Charger les messages existants
+      await loadMessages();
+
+      // S'abonner aux nouveaux messages
+      subscribeToMessages();
+    } catch (err) {
+      console.error("❌ Erreur en chargeant la conversation:", err);
+      messagesContainer.innerHTML = `
+        <div class="alert alert-error">
+          <p>Erreur en chargeant la conversation</p>
+          <p class="text-sm">${err.message}</p>
+        </div>
+      `;
+    }
+  };
+
+  // Charger les messages
+  const loadMessages = async () => {
+    try {
+      const messages = await pb.collection("conversation_messages").getFullList({
+        filter: `conversation = "${conversationId}"`,
+        sort: "created",
+      });
+
+      console.log("📨 Messages:", messages);
+
+      if (messages.length === 0) {
+        messagesContainer.innerHTML = `
+          <div class="text-center opacity-50 py-8">
+            <p>Aucun message pour le moment</p>
+            <p class="text-sm">Sois le premier à écrire !</p>
+          </div>
+        `;
+        return;
+      }
+
+      messagesContainer.innerHTML = "";
+
+      messages.forEach((msg) => {
+        const isOwn = msg.sender === userId;
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `chat ${isOwn ? "chat-end" : "chat-start"}`;
+        messageDiv.innerHTML = `
+          <div class="chat-bubble ${isOwn ? "chat-bubble-accent" : "chat-bubble-secondary"}">
+            <p>${escapeHtml(msg.text)}</p>
+            <span class="text-xs opacity-70 block mt-1">
+              ${new Date(msg.created).toLocaleTimeString()}
+            </span>
+          </div>
+        `;
+        messagesContainer.appendChild(messageDiv);
+      });
+
+      // Scroll vers le bas
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    } catch (err) {
+      console.error("❌ Erreur en chargeant les messages:", err);
+    }
+  };
+
+  // S'abonner aux nouveaux messages en temps réel
+  const subscribeToMessages = () => {
+    pb.collection("conversation_messages").subscribe(
+      "*",
+      (e) => {
+        if (
+          e.record &&
+          e.record.conversation === conversationId &&
+          e.action === "create"
+        ) {
+          console.log("📬 Nouveau message:", e.record);
+          addMessageToUI(e.record);
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+      },
+      { expand: "sender" }
+    );
+  };
+
+  // Ajouter un message à l'interface
+  const addMessageToUI = (msg) => {
+    // Enlever le message "aucun message" s'il existe
+    const emptyState = messagesContainer.querySelector(".text-center");
+    if (emptyState) {
+      emptyState.remove();
+    }
+
+    const isOwn = msg.sender === userId;
+    const messageDiv = document.createElement("div");
+    messageDiv.className = `chat ${isOwn ? "chat-end" : "chat-start"}`;
+    messageDiv.innerHTML = `
+      <div class="chat-bubble ${isOwn ? "chat-bubble-accent" : "chat-bubble-secondary"}">
+        <p>${escapeHtml(msg.text)}</p>
+        <span class="text-xs opacity-70 block mt-1">
+          ${new Date(msg.created).toLocaleTimeString()}
+        </span>
+      </div>
+    `;
+    messagesContainer.appendChild(messageDiv);
+  };
+
+  // Envoyer un message
+  const sendMessage = async () => {
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    try {
+      sendButton.disabled = true;
+
+      await pb.collection("conversation_messages").create({
+        conversation: conversationId,
+        sender: userId,
+        text: text,
+      });
+
+      messageInput.value = "";
+      charCount.textContent = "0/500";
+      sendButton.disabled = false;
+      messageInput.focus();
+    } catch (err) {
+      console.error("❌ Erreur en envoyant le message:", err);
+      alert("Erreur en envoyant le message: " + err.message);
+      sendButton.disabled = false;
+    }
+  };
+
+  // Fermer la conversation
+  const closeConversation = async () => {
+    if (!confirm("Tu es sûr de vouloir fermer cette conversation ?")) {
+      return;
+    }
+
+    try {
+      await pb.collection("conversations").update(conversationId, {
+        status: "closed",
+      });
+
+      console.log("✅ Conversation fermée");
+      sessionStorage.removeItem("conversationId");
+      window.location.href = "/interactions";
+    } catch (err) {
+      console.error("❌ Erreur en fermant la conversation:", err);
+      alert("Erreur en fermant la conversation");
+    }
+  };
+
+  // Utilitaire pour échapper HTML
+  const escapeHtml = (text) => {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  };
+
+  // Event listeners
+  if (sendButton) {
+    sendButton.addEventListener("click", sendMessage);
+  }
+
+  if (messageInput) {
+    messageInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    messageInput.addEventListener("input", () => {
+      const length = messageInput.value.length;
+      if (charCount) {
+        charCount.textContent = `${length}/500`;
+      }
+      if (sendButton) {
+        sendButton.disabled = length === 0;
+      }
+    });
+  }
+
+  if (closeButton) {
+    closeButton.addEventListener("click", closeConversation);
+  }
+
+  // Initialiser
+  if (conversationId) {
+    loadConversation();
+  }
+</script>
+
+<style>
+  .chat-bubble {
+    max-width: 80%;
+    word-wrap: break-word;
+  }
+</style>

@@ -1,0 +1,480 @@
+---
+import LayoutProtege from "../../../layouts/LayoutProtege.astro";
+import Bouton from "../../../components/Bouton.astro";
+---
+
+<LayoutProtege
+  nomPage="Personnes disponibles"
+  titre_page="Personnes disponibles"
+  intro_page="Choisis avec qui tu veux discuter"
+>
+  <div class="w-full max-w-sm mx-auto space-y-6">
+    <!-- Status Card -->
+    <div id="statusCard" class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-4">
+      <div class="flex flex-col items-center gap-4">
+        <div id="loadingSpinner" class="w-16 h-16">
+          <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-accent"></div>
+        </div>
+        
+        <div class="text-center">
+          <h3 id="statusTitle" class="font-jua text-lg mb-2">Recherche en cours</h3>
+          <p id="statusMessage" class="text-sm opacity-80">
+            Nous cherchons des personnes avec le même mood...
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Liste des personnes disponibles -->
+    <div id="peopleList" class="space-y-3 hidden">
+      <!-- Les personnes seront ajoutées ici dynamiquement -->
+    </div>
+
+    <!-- Message si aucune personne -->
+    <div id="noPeopleMessage" class="hidden bg-base-100 border-2 border-base-content/10 rounded-3xl p-4">
+      <p class="text-sm text-center opacity-70">
+        Personne ne partage ton mood en ce moment. Réessaie plus tard ! 💭
+      </p>
+    </div>
+
+    <!-- Info Card -->
+    <div class="bg-base-100 border-2 border-base-content/10 rounded-3xl p-4">
+      <p class="text-sm text-center opacity-70">
+        💚 Les personnes affichées partagent le même mood que toi
+      </p>
+    </div>
+
+    <!-- Boutons de contrôle -->
+    <div class="space-y-3">
+      <button
+        id="toggleAvailabilityButton"
+        class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-semibold text-base py-2 px-6 border-2 rounded-4xl shadow-md w-full transition-all duration-300 ease-in-out bg-error/20 hover:bg-error/30 border-error"
+      >
+        Mettre en pause les interactions
+      </button>
+    </div>
+  </div>
+</LayoutProtege>
+
+<script type="module" is:inline>
+  import pb from "/pocketbase/pb.ts";
+
+  // Rediriger si pas connecté
+  if (!pb.authStore.isValid) {
+    window.location.href = "/connexion";
+  }
+
+  const statusCard = document.getElementById("statusCard");
+  const loadingSpinner = document.getElementById("loadingSpinner");
+  const statusTitle = document.getElementById("statusTitle");
+  const statusMessage = document.getElementById("statusMessage");
+  const peopleList = document.getElementById("peopleList");
+  const noPeopleMessage = document.getElementById("noPeopleMessage");
+  const toggleAvailabilityButton = document.getElementById("toggleAvailabilityButton");
+
+  let myMatchRequest = null;
+  let myMood = null;
+  let isAvailable = true;
+
+  // Utilitaire pour échapper HTML
+  const escapeHtml = (text) => {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  };
+
+  const resolveDisplayName = (userInfo) => {
+    if (!userInfo) return "Personne anonyme";
+    if (userInfo.anonymous === true) return "Personne anonyme";
+
+    const pseudo = (userInfo.pseudo || "").toString().trim();
+    if (pseudo) return pseudo;
+
+    const username = (userInfo.username || "").toString().trim();
+    if (username) return username;
+
+    return "Personne anonyme";
+  };
+
+  // Vérifier si l'utilisateur a un mood aujourd'hui
+  const checkTodayMood = async () => {
+    try {
+      const userId = pb.authStore.model.id;
+      
+      // Vérifier l'état de l'utilisateur courant
+      const currentUser = await pb.collection("users").getOne(userId);
+      console.log("👤 Utilisateur courant:", {
+        id: currentUser.id,
+        pseudo: currentUser.pseudo,
+        anonymous: currentUser.anonymous,
+        typeAnonymous: typeof currentUser.anonymous
+      });
+      
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      
+      const moods = await pb.collection("moods").getFullList({
+        filter: `user = "${userId}"`,
+        sort: "-created",
+      });
+
+      console.log("✅ Tous les moods de l'user:", moods);
+      
+      const todayMoods = moods.filter((mood) => {
+        const createdAt = new Date(mood.created);
+        return createdAt >= startOfDay;
+      });
+      
+      console.log("📅 Moods du jour:", todayMoods);
+
+      if (todayMoods.length === 0) {
+        statusTitle.textContent = "Aucun mood enregistré";
+        statusMessage.textContent = "Enregistre ton mood du jour avant de chercher une interaction";
+        loadingSpinner.style.display = "none";
+        setTimeout(() => {
+          window.location.href = "/mood/enregistrer";
+        }, 2000);
+        return null;
+      }
+
+      return todayMoods[0]; // Le mood le plus récent du jour
+    } catch (err) {
+      console.error("❌ Erreur lors de la vérification du mood:", err);
+      return null;
+    }
+  };
+
+  // Créer ou récupérer une match request
+  const getOrCreateMatchRequest = async (mood) => {
+    try {
+      const userId = pb.authStore.model.id;
+
+      console.log("🔍 Mood à enregistrer:", mood.mood);
+
+      // Vérifier si une request existe déjà
+      const existingRequests = await pb.collection("match_requests").getFullList({
+        filter: `user = "${userId}" && status = "waiting"`,
+        sort: "-created",
+      });
+
+      console.log("📋 Match requests existantes:", existingRequests);
+
+      const sameMoodRequest = existingRequests.find(
+        (request) => request.mood === mood.mood,
+      );
+
+      if (sameMoodRequest) {
+        console.log("♻️ Réutilisation de la demande existante (même mood)");
+        return sameMoodRequest;
+      }
+
+      if (existingRequests.length > 0) {
+        const updatedRequest = await pb
+          .collection("match_requests")
+          .update(existingRequests[0].id, {
+            mood: mood.mood,
+            status: "waiting",
+          });
+
+        console.log("🔄 Demande existante mise à jour avec le nouveau mood:", updatedRequest);
+        return updatedRequest;
+      }
+
+      // Créer une nouvelle request
+      const request = await pb.collection("match_requests").create({
+        user: userId,
+        mood: mood.mood,
+        status: "waiting",
+      });
+
+      console.log("✨ Nouvelle match request créée:", request);
+      return request;
+    } catch (err) {
+      console.error("❌ Erreur lors de la création de la request:", err);
+      return null;
+    }
+  };
+
+  // Chercher les personnes disponibles avec le même mood
+  const findAvailablePeople = async () => {
+    if (!myMatchRequest) return;
+
+    try {
+      const userId = pb.authStore.model.id;
+      
+      console.log(`🔎 Recherche des personnes avec mood = "${myMatchRequest.mood}"`);
+
+      // Chercher d'autres requests en attente avec le même mood
+      let availablePeople = await pb.collection("match_requests").getFullList({
+        filter: `mood = "${myMatchRequest.mood}" && status = "waiting" && user != "${userId}"`,
+        sort: "-created",
+        expand: "user",
+      });
+
+      // Fallback: si aucune match_request, chercher via les moods du jour
+      if (availablePeople.length === 0) {
+        const now = new Date();
+        const startOfDay = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          0,
+          0,
+          0,
+        );
+
+        const moodCandidates = await pb.collection("moods").getFullList({
+          filter: `mood = "${myMatchRequest.mood}" && user != "${userId}"`,
+          sort: "-created",
+          expand: "user",
+        });
+
+        const seenUsers = new Set();
+        availablePeople = moodCandidates
+          .filter((entry) => new Date(entry.created) >= startOfDay)
+          .filter((entry) => {
+            if (!entry.user || seenUsers.has(entry.user)) return false;
+            seenUsers.add(entry.user);
+            return true;
+          })
+          .map((entry) => ({
+            id: `mood-${entry.id}`,
+            user: entry.user,
+            mood: entry.mood,
+            expand: entry.expand,
+          }));
+
+        console.log("🧭 Fallback via moods du jour:", availablePeople);
+      }
+
+      console.log(`🎯 Personnes trouvées:`, availablePeople);
+
+      // Cacher le spinner
+      statusCard.classList.add("hidden");
+
+      if (availablePeople.length === 0) {
+        // Aucune personne disponible
+        noPeopleMessage.classList.remove("hidden");
+      } else {
+        // Afficher la liste des personnes
+        noPeopleMessage.classList.add("hidden");
+        peopleList.classList.remove("hidden");
+        peopleList.innerHTML = "";
+        let visiblePeopleCount = 0;
+
+        // Charger les infos utilisateur pour chaque personne
+        for (let index = 0; index < availablePeople.length; index++) {
+          const person = availablePeople[index];
+
+          // Récupérer les infos utilisateur (si disponibles via expand)
+          const userInfo = person.expand?.user;
+          console.log("🔍 Débogage utilisateur:", {
+            hasUserInfo: !!userInfo,
+            anonymous: userInfo?.anonymous,
+            pseudo: userInfo?.pseudo,
+            typeAnonymous: typeof userInfo?.anonymous,
+          });
+
+          // Déterminer le nom à afficher
+          const displayName = resolveDisplayName(userInfo);
+
+          const personCard = document.createElement("div");
+          personCard.className = "bg-gradient-custom border-2 rounded-4xl shadow-md p-4 cursor-pointer hover:bg-info/20 transition-all";
+          personCard.innerHTML = `
+            <div class="flex justify-between ">
+              <div>
+                <h3 class="font-bold">${escapeHtml(displayName)}</h3>
+                <p class="text-sm opacity-70">Mood: ${person.mood}</p>
+              </div>
+              <div class="text-2xl flex items-center">💬</div>
+            </div>
+          `;
+
+          personCard.addEventListener("click", () => startConversation(person));
+          peopleList.appendChild(personCard);
+          visiblePeopleCount += 1;
+        }
+
+        if (visiblePeopleCount === 0) {
+          peopleList.classList.add("hidden");
+          noPeopleMessage.classList.remove("hidden");
+        }
+      }
+    } catch (err) {
+      console.error("❌ Erreur lors de la recherche:", err);
+      statusTitle.textContent = "Erreur";
+      statusMessage.textContent = "Une erreur est survenue";
+      loadingSpinner.style.display = "none";
+    }
+  };
+
+  // Démarrer une conversation avec une personne
+  const startConversation = async (otherPerson) => {
+    try {
+      const userId = pb.authStore.model.id;
+
+      console.log("🎉 Démarrage d'une conversation avec:", otherPerson);
+
+      // Vérifier si une conversation existe déjà entre ces deux personnes
+      const existingConversations = await pb.collection("conversations").getFullList({
+        filter: `((user1 = "${userId}" && user2 = "${otherPerson.user}") || (user1 = "${otherPerson.user}" && user2 = "${userId}")) && status = "active"`,
+      });
+
+      let conversation;
+      if (existingConversations.length > 0) {
+        console.log("💬 Conversation existante trouvée");
+        conversation = existingConversations[0];
+      } else {
+        // Créer une nouvelle conversation
+        conversation = await pb.collection("conversations").create({
+          mood: myMatchRequest.mood,
+          status: "active",
+          user1: userId,
+          user2: otherPerson.user,
+        });
+
+        console.log("✨ Conversation créée:", conversation);
+        
+        // NE PAS mettre à jour le status - on les garde en "waiting" pour qu'ils restent visibles
+      }
+
+      // Rediriger vers la conversation
+      sessionStorage.setItem("conversationId", conversation.id);
+      window.location.href = `/interactions/conversation`;
+    } catch (err) {
+      console.error("❌ Erreur lors de la création de la conversation:", err);
+      alert("Erreur lors de la création de la conversation: " + err.message);
+    }
+  };
+
+  // Démarrer la recherche
+  const startMatching = async () => {
+    myMood = await checkTodayMood();
+    if (!myMood) return;
+
+    myMatchRequest = await getOrCreateMatchRequest(myMood);
+    if (!myMatchRequest) {
+      statusTitle.textContent = "Erreur";
+      statusMessage.textContent = "Une erreur est survenue. Réessaie plus tard.";
+      loadingSpinner.style.display = "none";
+      return;
+    }
+
+    // Chercher les personnes disponibles
+    await findAvailablePeople();
+  };
+
+  // Listener pour le bouton de pause/reprise
+  toggleAvailabilityButton.addEventListener("click", async () => {
+    try {
+      const userId = pb.authStore.model.id;
+
+      if (isAvailable && myMatchRequest) {
+        // Supprimer la match_request pour se rendre indisponible
+        await pb.collection("match_requests").delete(myMatchRequest.id);
+        isAvailable = false;
+        myMatchRequest = null;
+
+        // Sauvegarder l'état en pause dans le profil
+        await pb.collection("users").update(userId, {
+          interactionsActive: false,
+        });
+
+        console.log("⏸️ Interactions mises en pause");
+
+        // Mettre à jour le bouton et le message
+        toggleAvailabilityButton.textContent = "Reprendre les interactions";
+        toggleAvailabilityButton.classList.remove("bg-error/20", "border-error");
+        toggleAvailabilityButton.classList.add("bg-info/20", "border-info");
+
+        statusCard.classList.remove("hidden");
+        statusTitle.textContent = "Interactions en pause";
+        statusMessage.textContent = "Tu ne figures pas dans les recherches des autres pour le moment";
+        loadingSpinner.style.display = "none";
+        peopleList.classList.add("hidden");
+        noPeopleMessage.classList.add("hidden");
+      } else if (!isAvailable) {
+        // Redevenir disponible
+        myMood = await checkTodayMood();
+        if (!myMood) return;
+
+        myMatchRequest = await getOrCreateMatchRequest(myMood);
+        if (!myMatchRequest) {
+          console.error("❌ Erreur lors de la réactivation");
+          return;
+        }
+
+        isAvailable = true;
+
+        // Sauvegarder l'état actif dans le profil
+        await pb.collection("users").update(userId, {
+          interactionsActive: true,
+        });
+
+        console.log("▶️ Interactions reprises");
+
+        // Mettre à jour le bouton
+        toggleAvailabilityButton.textContent = "Mettre en pause les interactions";
+        toggleAvailabilityButton.classList.remove("bg-info/20", "hover:bg-info/30", "border-info");
+        toggleAvailabilityButton.classList.add("bg-error/20", "hover:bg-error/30", "border-error");
+
+        // Relancer la recherche
+        statusCard.classList.remove("hidden");
+        statusTitle.textContent = "Recherche en cours";
+        statusMessage.textContent = "Nous cherchons des personnes avec le même mood...";
+        loadingSpinner.style.display = "block";
+        peopleList.classList.add("hidden");
+        noPeopleMessage.classList.add("hidden");
+
+        await findAvailablePeople();
+      }
+    } catch (err) {
+      console.error("❌ Erreur lors du changement de disponibilité:", err);
+    }
+  });
+
+  // Charger et appliquer l'état des interactions sauvegardé
+  const loadInteractionState = async () => {
+    try {
+      const userId = pb.authStore.model.id;
+      const user = await pb.collection("users").getOne(userId);
+
+      // Par défaut, les interactions sont actives (true)
+      const interactionsActive = user.interactionsActive !== false;
+
+      if (!interactionsActive) {
+        // L'utilisateur a mis en pause les interactions
+        isAvailable = false;
+        toggleAvailabilityButton.textContent = "Reprendre les interactions";
+        toggleAvailabilityButton.classList.remove("bg-error/20", "border-error");
+        toggleAvailabilityButton.classList.add("bg-info/20", "border-info");
+
+        statusCard.classList.remove("hidden");
+        statusTitle.textContent = "Interactions en pause";
+        statusMessage.textContent = "Tu ne figures pas dans les recherches des autres pour le moment";
+        loadingSpinner.style.display = "none";
+        peopleList.classList.add("hidden");
+        noPeopleMessage.classList.add("hidden");
+      } else {
+        // Lancer la recherche normalement
+        await startMatching();
+      }
+    } catch (err) {
+      console.error("❌ Erreur lors du chargement de l'état des interactions:", err);
+      // En cas d'erreur, continuer normalement
+      await startMatching();
+    }
+  };
+
+  // Lancer au chargement
+  loadInteractionState();
+</script>
+
+<style>
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+</style>

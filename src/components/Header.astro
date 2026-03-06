@@ -2,8 +2,8 @@
 const { titre, intro } = Astro.props;
 ---
 
-<header class="mt-6 w-full">
-  <div class="flex items-center">
+<header class="my-6 w-full">
+  <div class="flex items-center -ml-6">
     <img
       id="familierImage"
       src=""
@@ -11,7 +11,7 @@ const { titre, intro } = Astro.props;
       class="w-24 h-24 object-contain"
     />
     <div>
-      <h1 id="headerTitle" class="text-xl text-left">{titre}</h1>
+      <h1 id="headerTitle" class="text-left">{titre}</h1>
       <p id="headerIntro" class="text-left">{intro}</p>
     </div>
   </div>

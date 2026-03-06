@@ -3,28 +3,31 @@ import LayoutNeutreProtege from "../../layouts/LayoutNeutreProtege.astro";
 import Bouton from "../../components/Bouton.astro";
 ---
 
-<LayoutNeutreProtege nomPage="Personnalisation" titre_page="Personnalise ton familier">
+<LayoutNeutreProtege nomPage="Personnalisation" titre_page="Personnalise ton profil">
   <div class="font-kantumruy-pro text-lg text-center">
     <span>Vos points disponibles:</span>
     <span id="pointsValue" class="font-bold">0</span>
   </div>
 
   <section class="mt-8 w-full max-w-md space-y-6">
-    <div
-      class="w-100% h-50 bg-white border-2 rounded-4xl shadow-md p-2 flex flex-col items-center"
-    >
-      <img
-        id="previewImage"
-        src=""
-        alt="Apercu du familier"
-        class="w-full h-full object-contain"
-      />
-    </div>
+    <!-- Section Familier -->
+    <div class="bg-gradient-custom border-2 rounded-4xl shadow-md p-4">
+      <div
+        class="w-100% h-50 bg-white border-2 rounded-4xl shadow-md p-2 flex flex-col items-center"
+      >
+        <img
+          id="previewImage"
+          src=""
+          alt="Apercu du familier"
+          class="w-full h-full object-contain"
+        />
+      </div>
 
-    <div>
-      <p>Sélectionne un accessoire.</p>
-      <p>Les options verrouillées demandent des points.</p>
-      <div id="options" class="mt-4 grid grid-cols-3 gap-3"></div>
+      <div class="mt-4">
+        <p>Sélectionne un accessoire.</p>
+        <p class="text-sm opacity-70">Les options verrouillées demandent des points.</p>
+        <div id="options" class="mt-4 grid grid-cols-3 gap-3"></div>
+      </div>
     </div>
 
     <div class="mt-10 flex flex-col items-center gap-3 px-10">
@@ -34,7 +37,7 @@ import Bouton from "../../components/Bouton.astro";
         class="bg-base-300 active:bg-info inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-10 border-2 rounded-4xl shadow-md w-full min-w-65 max-w-xs
         transition-all duration-300 ease-in-out transform"
       >
-        Valider
+        Sauvegarder
       </button>
       <Bouton text="Retour à l'accueil" url="/accueil" variant="jaune" />
     </div>

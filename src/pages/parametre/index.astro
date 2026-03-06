@@ -1,0 +1,140 @@
+---
+import LayoutProtege from "../../layouts/LayoutProtege.astro";
+import Bouton from "../../components/Bouton.astro";
+---
+<LayoutProtege
+  nomPage="Paramètres"
+  titre_page="Paramètres de ton compte"
+  intro_page="Gère tes préférences et ta confidentialité"
+>
+  <div class="w-full max-w-sm mx-auto space-y">
+    <!-- Section Interactions -->
+    <div class="bg-base-300 border-2 rounded-4xl shadow-md p-4">
+      <h2 class="mb-3 text-center">Interactions</h2>
+      <div class="flex justify-between">
+        <div>
+          <p class="font-semibold">Mode anonyme</p>
+          <p class="text-sm opacity-70">Affiche "Anonyme" au lieu de ton pseudo</p>
+        </div>
+        <input
+          type="checkbox"
+          id="anonymousToggle"
+          class="toggle toggle-accent"
+          checked
+        />
+      </div>
+
+      <div class="flex items-center justify-between mt-4 pt-4 border-t border-base-content/10">
+        <div>
+          <p class="font-semibold">J'ai accepté les principes</p>
+          <p class="text-sm opacity-70">Décochez pour afficher à nouveau l'introduction</p>
+        </div>
+        <input
+          type="checkbox"
+          id="interactionsIntroToggle"
+          class="toggle toggle-accent"
+        />
+      </div>
+    </div>
+
+    <div class="mt-8 flex flex-col items-center gap-3">
+      <Bouton text="Retour à l'accueil" url="/accueil" variant="jaune" />
+    </div>
+  </div>
+</LayoutProtege>
+
+<script type="module" is:inline>
+    import pb from "/pocketbase/pb.ts";
+
+    const anonymousToggle = document.getElementById("anonymousToggle");
+    const interactionsIntroToggle = document.getElementById("interactionsIntroToggle");
+    const INTERACTIONS_INTRO_KEY = "interactionsShowIntro";
+
+    const state = {
+      anonymous: true,
+      InteractionsIntro: false,
+    };
+
+    const loadSettings = async () => {
+      if (!pb.authStore.isValid || !pb.authStore.model) {
+        window.location.href = "/connexion";
+        return;
+      }
+
+      try {
+        const userId = pb.authStore.model.id;
+        const user = await pb.collection("users").getOne(userId);
+
+        // Charger le statut anonymous (par défaut true)
+        state.anonymous = user.anonymous !== undefined ? user.anonymous : true;
+        if (anonymousToggle) {
+          anonymousToggle.checked = state.anonymous;
+        }
+
+        // Charger le statut InteractionsIntro (true = accepté)
+        const savedIntroSetting = localStorage.getItem(INTERACTIONS_INTRO_KEY);
+        if (user.InteractionsIntro !== undefined) {
+          state.InteractionsIntro = Boolean(user.InteractionsIntro);
+        } else {
+          state.InteractionsIntro =
+            savedIntroSetting === null ? false : savedIntroSetting === "true";
+        }
+
+        localStorage.setItem(
+          INTERACTIONS_INTRO_KEY,
+          String(state.InteractionsIntro),
+        );
+        if (interactionsIntroToggle) {
+          interactionsIntroToggle.checked = state.InteractionsIntro;
+        }
+      } catch (err) {
+        console.error("Erreur lors du chargement des paramètres:", err);
+      }
+    };
+
+    const saveSettings = async () => {
+      const userId = pb.authStore.model?.id;
+      if (!userId) {
+        alert("Impossible de sauvegarder");
+        return;
+      }
+
+      try {
+        state.anonymous = anonymousToggle?.checked ?? state.anonymous;
+        state.InteractionsIntro = interactionsIntroToggle?.checked ?? state.InteractionsIntro;
+
+        localStorage.setItem(
+          INTERACTIONS_INTRO_KEY,
+          String(state.InteractionsIntro),
+        );
+
+        await pb.collection("users").update(userId, {
+          anonymous: state.anonymous,
+          InteractionsIntro: state.InteractionsIntro,
+        });
+
+        alert("Paramètres sauvegardés");
+      } catch (err) {
+        console.error("Erreur lors de la sauvegarde:", err);
+        alert("Erreur lors de la sauvegarde");
+      }
+    };
+
+    // Event listeners
+    if (anonymousToggle) {
+      anonymousToggle.addEventListener("change", () => {
+        state.anonymous = anonymousToggle.checked;
+        saveSettings();
+      });
+    }
+
+    if (interactionsIntroToggle) {
+      interactionsIntroToggle.addEventListener("change", () => {
+        state.InteractionsIntro = interactionsIntroToggle.checked;
+        saveSettings();
+      });
+    }
+
+    loadSettings();
+</script>
+</LayoutProtege>

@@ -1,0 +1,155 @@
+---
+import LayoutProtege from "../../layouts/LayoutProtege.astro";
+---
+
+<LayoutProtege
+  nomPage="Interactions"
+  titre_page="Interactions"
+  intro_page="Un espace de soutien bienveillant"
+>
+  <div class="w-full max-w-sm mx-auto space-y-6">
+    <!-- Card Info -->
+    <div class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-3">
+      <h3 class="text-center">Ce qu'il faut savoir</h3>
+        <p class="text-left">
+          Ce n'est pas un réseau social : Les connexions sont basées sur des expériences communes. Tout reste anonyme et respectueux.
+        </p>
+    </div>
+
+    <!-- Card Principes -->
+    <div class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-3">
+      <h3 class="text-center">Les principes</h3>
+      
+      <div class="space-y-2">
+        <div class="flex gap-2 items-start">
+          <span class="text-lg">✨</span>
+          <p class="text-left">
+            Les connexions sont basées sur vos moods et émotions récents
+          </p>
+        </div>
+        
+        <div class="flex gap-2 items-start">
+          <span class="text-lg">🔒</span>
+          <p class="text-left">
+            Aucune donnée personnelle n'est partagée
+          </p>
+        </div>
+        
+        <div class="flex gap-2 items-start">
+          <span class="text-lg">👋</span>
+          <p class="text-left">
+            Tu peux quitter une conversation à tout moment
+          </p>
+        </div>
+        
+        <div class="flex gap-2 items-start">
+          <span class="text-lg">💚</span>
+          <p class="text-left">
+            Sois bienveillant·e, c'est un espace de soutien
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Acceptation -->
+    <div class="flex items-start gap-2">
+      <input
+        type="checkbox"
+        id="acceptTermsCheckbox"
+        class="checkbox checkbox-sm mt-1"
+      />
+      <label for="acceptTermsCheckbox" class="text-sm cursor-pointer">
+        J'ai lu et j'accepte ces principes de bienveillance
+      </label>
+    </div>
+
+    <!-- Boutons d'action -->
+    <div class="space-y-3">
+      <button
+        id="startInteractionButton"
+        class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-10 border-2 rounded-4xl shadow-md w-full transition-all duration-300 ease-in-out transform bg-base-300 active:bg-info cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled
+      >
+        Démarrer une interaction
+      </button>
+
+      <a
+        href="/accueil"
+        class="inline-flex items-center justify-center text-base-content font-balsamiq-sans text-base py-2 px-8 w-full transition-all opacity-70 hover:opacity-100"
+      >
+        Retour
+      </a>
+    </div>
+  </div>
+</LayoutProtege>
+
+<script type="module" is:inline>
+  import pb from "/pocketbase/pb.ts";
+
+  const INTERACTIONS_INTRO_KEY = "interactionsShowIntro";
+
+  // Rediriger si pas connecté
+  if (!pb.authStore.isValid) {
+    window.location.href = "/connexion";
+  }
+
+  const startButton = document.getElementById("startInteractionButton");
+  const acceptCheckbox = document.getElementById("acceptTermsCheckbox");
+
+  // Mettre à jour l'état du bouton selon la checkbox
+  acceptCheckbox.addEventListener("change", () => {
+    startButton.disabled = !acceptCheckbox.checked;
+  });
+
+  const getShouldShowIntro = async () => {
+    const localValue = localStorage.getItem(INTERACTIONS_INTRO_KEY);
+
+    try {
+      const userId = pb.authStore.model?.id;
+      if (!userId) {
+        // Si pas accepté localement, montrer l'intro (true = montrer)
+        return localValue !== "true";
+      }
+
+      const user = await pb.collection("users").getOne(userId);
+      // InteractionsIntro = true = accepté, donc ne pas montrer (return false)
+      // InteractionsIntro = false/undefined = pas accepté, donc montrer (return true)
+      if (user.InteractionsIntro !== undefined) {
+        localStorage.setItem(
+          INTERACTIONS_INTRO_KEY,
+          String(user.InteractionsIntro),
+        );
+        return !user.InteractionsIntro; // Inverser : true = accepté = ne pas montrer
+      }
+    } catch (err) {
+      console.warn("Impossible de charger la préférence intro depuis le profil:", err);
+    }
+
+    return localValue !== "true";
+  };
+
+  const markIntroAsAccepted = async () => {
+    localStorage.setItem(INTERACTIONS_INTRO_KEY, "true");
+
+    try {
+      const userId = pb.authStore.model?.id;
+      if (userId) {
+        await pb.collection("users").update(userId, {
+          InteractionsIntro: true,
+        });
+      }
+    } catch (err) {
+      console.warn("Impossible de sauvegarder la préférence intro dans le profil:", err);
+    }
+  };
+
+  startButton.addEventListener("click", async () => {
+    await markIntroAsAccepted();
+    window.location.href = "/interactions/appariement";
+  });
+
+  const shouldShowIntro = await getShouldShowIntro();
+  if (!shouldShowIntro) {
+    window.location.href = "/interactions/appariement";
+  }
+</script>
