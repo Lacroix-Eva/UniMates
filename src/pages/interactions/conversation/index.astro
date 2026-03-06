@@ -64,7 +64,9 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
   let otherUserName = "Quelqu'un";
 
   // Son de notification simple avec Data URI
-  const notificationSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPPfS0GI3nJ8OSMPQoVYbXq7KtiGAg+ltryxHMpBSh+zPLaizsIHGS57OihURAMUKvm8bddGwU2jdXzzn4uBSR4yPDej0AKHF+26+upWBYKRp/h8r9vIQQyhM/z0YE4BxpluuvtoVMRDlGs5O+5YRsENo3V8859LQYke8rx34k+CRZhu+vuqCgYCT6W2vLCcikFKH/N8tumNwgZabjm7J5RDktgo+DwuWIbBTaO1fPPfi0GJHzK8d+JPQgVYrzt7qhcGAg/ltrzwXEpBSiAzvPaqj0IF2S56OugUxAMUqzl8bhaHAU1jdT0z34yBiN6yPDij0QJFGK57+6oVRkKMqXQ8cd9NQYfeMfx3Y9FChtm') ;
+  const notificationSound = new Audio(
+    "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPPfS0GI3nJ8OSMPQoVYbXq7KtiGAg+ltryxHMpBSh+zPLaizsIHGS57OihURAMUKvm8bddGwU2jdXzzn4uBSR4yPDej0AKHF+26+upWBYKRp/h8r9vIQQyhM/z0YE4BxpluuvtoVMRDlGs5O+5YRsENo3V8859LQYke8rx34k+CRZhu+vuqCgYCT6W2vLCcikFKH/N8tumNwgZabjm7J5RDktgo+DwuWIbBTaO1fPPfi0GJHzK8d+JPQgVYrzt7qhcGAg/ltrzwXEpBSiAzvPaqj0IF2S56OugUxAMUqzl8bhaHAU1jdT0z34yBiN6yPDij0QJFGK57+6oVRkKMqXQ8cd9NQYfeMfx3Y9FChtm",
+  );
 
   // Vérifier si les sons sont activés
   const isSoundEnabled = () => {
@@ -89,20 +91,22 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
   // Marquer la conversation comme lue
   const markConversationAsRead = () => {
     if (!conversationId) return;
-    
+
     // Sauvegarder la date/heure actuelle comme dernière lecture
     const now = new Date().toISOString();
     localStorage.setItem(`lastRead_${conversationId}`, now);
-    
+
     console.log(`✅ Conversation ${conversationId} marquée comme lue:`, now);
-    
+
     // Retirer cette conversation du compteur de messages non lus
-    const unreadCounts = JSON.parse(localStorage.getItem("unreadMessages") || "{}");
+    const unreadCounts = JSON.parse(
+      localStorage.getItem("unreadMessages") || "{}",
+    );
     if (unreadCounts[conversationId]) {
       delete unreadCounts[conversationId];
       localStorage.setItem("unreadMessages", JSON.stringify(unreadCounts));
       console.log("💾 Messages non lus mis à jour:", unreadCounts);
-      
+
       // Notifier les autres onglets et la même page
       window.dispatchEvent(new Event("storage"));
     }
@@ -312,10 +316,10 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
               e.record.text.length > 50
                 ? e.record.text.substring(0, 50) + "..."
                 : e.record.text;
-            
+
             // Jouer le son de notification
             playNotificationSound();
-            
+
             // Afficher la notification système
             showNotification(`${otherUserName}`, messagePreview);
           }
@@ -368,7 +372,7 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
       charCount.textContent = "0/500";
       sendButton.disabled = false;
       messageInput.focus();
-      
+
       // Mettre à jour le timestamp de lecture quand on envoie un message
       markConversationAsRead();
     } catch (err) {
@@ -438,10 +442,10 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
     // Demander la permission pour les notifications
     requestNotificationPermission();
     loadConversation();
-    
+
     // Marquer comme lu quand on ouvre la conversation
     markConversationAsRead();
-    
+
     // Marquer comme lu quand la page devient visible
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) {

@@ -2,6 +2,7 @@
 import LayoutProtege from "../../layouts/LayoutProtege.astro";
 import Bouton from "../../components/Bouton.astro";
 ---
+
 <LayoutProtege
   nomPage="Paramètres"
   titre_page="Paramètres de ton compte"
@@ -14,7 +15,9 @@ import Bouton from "../../components/Bouton.astro";
       <div class="flex justify-between">
         <div>
           <p class="font-semibold">Mode anonyme</p>
-          <p class="text-sm opacity-70">Affiche "Anonyme" au lieu de ton pseudo</p>
+          <p class="text-sm opacity-70">
+            Affiche "Anonyme" au lieu de ton pseudo
+          </p>
         </div>
         <input
           type="checkbox"
@@ -24,10 +27,14 @@ import Bouton from "../../components/Bouton.astro";
         />
       </div>
 
-      <div class="flex items-center justify-between mt-4 pt-4 border-t border-base-content/10">
+      <div
+        class="flex items-center justify-between mt-4 pt-4 border-t border-base-content/10"
+      >
         <div>
           <p class="font-semibold">J'ai accepté les principes</p>
-          <p class="text-sm opacity-70">Décochez pour afficher à nouveau l'introduction</p>
+          <p class="text-sm opacity-70">
+            Décochez pour afficher à nouveau l'introduction
+          </p>
         </div>
         <input
           type="checkbox"
@@ -43,7 +50,9 @@ import Bouton from "../../components/Bouton.astro";
       <div class="flex justify-between">
         <div>
           <p class="font-semibold">Son de notification</p>
-          <p class="text-sm opacity-70">Jouer un son quand tu reçois un message</p>
+          <p class="text-sm opacity-70">
+            Jouer un son quand tu reçois un message
+          </p>
         </div>
         <input
           type="checkbox"
@@ -61,113 +70,122 @@ import Bouton from "../../components/Bouton.astro";
 </LayoutProtege>
 
 <script type="module" is:inline>
-    import pb from "/pocketbase/pb.ts";
+  import pb from "/pocketbase/pb.ts";
 
-    const anonymousToggle = document.getElementById("anonymousToggle");
-    const interactionsIntroToggle = document.getElementById("interactionsIntroToggle");
-    const notificationSoundToggle = document.getElementById("notificationSoundToggle");
-    const INTERACTIONS_INTRO_KEY = "interactionsShowIntro";
+  const anonymousToggle = document.getElementById("anonymousToggle");
+  const interactionsIntroToggle = document.getElementById(
+    "interactionsIntroToggle",
+  );
+  const notificationSoundToggle = document.getElementById(
+    "notificationSoundToggle",
+  );
+  const INTERACTIONS_INTRO_KEY = "interactionsShowIntro";
 
-    const state = {
-      anonymous: true,
-      InteractionsIntro: false,
-      notificationSound: true,
-    };
+  const state = {
+    anonymous: true,
+    InteractionsIntro: false,
+    notificationSound: true,
+  };
 
-    const loadSettings = async () => {
-      if (!pb.authStore.isValid || !pb.authStore.model) {
-        window.location.href = "/connexion";
-        return;
-      }
-
-      try {
-        const userId = pb.authStore.model.id;
-        const user = await pb.collection("users").getOne(userId);
-
-        // Charger le statut anonymous (par défaut true)
-        state.anonymous = user.anonymous !== undefined ? user.anonymous : true;
-        if (anonymousToggle) {
-          anonymousToggle.checked = state.anonymous;
-        }
-
-        // Charger le statut InteractionsIntro (true = accepté)
-        const savedIntroSetting = localStorage.getItem(INTERACTIONS_INTRO_KEY);
-        if (user.InteractionsIntro !== undefined) {
-          state.InteractionsIntro = Boolean(user.InteractionsIntro);
-        } else {
-          state.InteractionsIntro =
-            savedIntroSetting === null ? false : savedIntroSetting === "true";
-        }
-
-        localStorage.setItem(
-          INTERACTIONS_INTRO_KEY,
-          String(state.InteractionsIntro),
-        );
-        if (interactionsIntroToggle) {
-          interactionsIntroToggle.checked = state.InteractionsIntro;
-        }
-
-        // Charger le statut du son de notification (par défaut true)
-        const savedSoundSetting = localStorage.getItem("notificationSoundEnabled");
-        state.notificationSound = savedSoundSetting !== "false";
-        if (notificationSoundToggle) {
-          notificationSoundToggle.checked = state.notificationSound;
-        }
-      } catch (err) {
-        console.error("Erreur lors du chargement des paramètres:", err);
-      }
-    };
-
-    const saveSettings = async () => {
-      const userId = pb.authStore.model?.id;
-      if (!userId) {
-        alert("Impossible de sauvegarder");
-        return;
-      }
-
-      try {
-        state.anonymous = anonymousToggle?.checked ?? state.anonymous;
-        state.InteractionsIntro = interactionsIntroToggle?.checked ?? state.InteractionsIntro;
-
-        localStorage.setItem(
-          INTERACTIONS_INTRO_KEY,
-          String(state.InteractionsIntro),
-        );
-
-        await pb.collection("users").update(userId, {
-          anonymous: state.anonymous,
-          InteractionsIntro: state.InteractionsIntro,
-        });
-
-        alert("Paramètres sauvegardés");
-      } catch (err) {
-        console.error("Erreur lors de la sauvegarde:", err);
-        alert("Erreur lors de la sauvegarde");
-      }
-    };
-
-    // Event listeners
-    if (anonymousToggle) {
-      anonymousToggle.addEventListener("change", () => {
-        state.anonymous = anonymousToggle.checked;
-        saveSettings();
-      });
+  const loadSettings = async () => {
+    if (!pb.authStore.isValid || !pb.authStore.model) {
+      window.location.href = "/connexion";
+      return;
     }
 
-    if (interactionsIntroToggle) {
-      interactionsIntroToggle.addEventListener("change", () => {
-        state.InteractionsIntro = interactionsIntroToggle.checked;
-        saveSettings();
-      });
+    try {
+      const userId = pb.authStore.model.id;
+      const user = await pb.collection("users").getOne(userId);
+
+      // Charger le statut anonymous (par défaut true)
+      state.anonymous = user.anonymous !== undefined ? user.anonymous : true;
+      if (anonymousToggle) {
+        anonymousToggle.checked = state.anonymous;
+      }
+
+      // Charger le statut InteractionsIntro (true = accepté)
+      const savedIntroSetting = localStorage.getItem(INTERACTIONS_INTRO_KEY);
+      if (user.InteractionsIntro !== undefined) {
+        state.InteractionsIntro = Boolean(user.InteractionsIntro);
+      } else {
+        state.InteractionsIntro =
+          savedIntroSetting === null ? false : savedIntroSetting === "true";
+      }
+
+      localStorage.setItem(
+        INTERACTIONS_INTRO_KEY,
+        String(state.InteractionsIntro),
+      );
+      if (interactionsIntroToggle) {
+        interactionsIntroToggle.checked = state.InteractionsIntro;
+      }
+
+      // Charger le statut du son de notification (par défaut true)
+      const savedSoundSetting = localStorage.getItem(
+        "notificationSoundEnabled",
+      );
+      state.notificationSound = savedSoundSetting !== "false";
+      if (notificationSoundToggle) {
+        notificationSoundToggle.checked = state.notificationSound;
+      }
+    } catch (err) {
+      console.error("Erreur lors du chargement des paramètres:", err);
+    }
+  };
+
+  const saveSettings = async () => {
+    const userId = pb.authStore.model?.id;
+    if (!userId) {
+      alert("Impossible de sauvegarder");
+      return;
     }
 
-    if (notificationSoundToggle) {
-      notificationSoundToggle.addEventListener("change", () => {
-        state.notificationSound = notificationSoundToggle.checked;
-        localStorage.setItem("notificationSoundEnabled", String(state.notificationSound));
-      });
-    }
+    try {
+      state.anonymous = anonymousToggle?.checked ?? state.anonymous;
+      state.InteractionsIntro =
+        interactionsIntroToggle?.checked ?? state.InteractionsIntro;
 
-    loadSettings();
+      localStorage.setItem(
+        INTERACTIONS_INTRO_KEY,
+        String(state.InteractionsIntro),
+      );
+
+      await pb.collection("users").update(userId, {
+        anonymous: state.anonymous,
+        InteractionsIntro: state.InteractionsIntro,
+      });
+
+      alert("Paramètres sauvegardés");
+    } catch (err) {
+      console.error("Erreur lors de la sauvegarde:", err);
+      alert("Erreur lors de la sauvegarde");
+    }
+  };
+
+  // Event listeners
+  if (anonymousToggle) {
+    anonymousToggle.addEventListener("change", () => {
+      state.anonymous = anonymousToggle.checked;
+      saveSettings();
+    });
+  }
+
+  if (interactionsIntroToggle) {
+    interactionsIntroToggle.addEventListener("change", () => {
+      state.InteractionsIntro = interactionsIntroToggle.checked;
+      saveSettings();
+    });
+  }
+
+  if (notificationSoundToggle) {
+    notificationSoundToggle.addEventListener("change", () => {
+      state.notificationSound = notificationSoundToggle.checked;
+      localStorage.setItem(
+        "notificationSoundEnabled",
+        String(state.notificationSound),
+      );
+    });
+  }
+
+  loadSettings();
 </script>
-</LayoutProtege>

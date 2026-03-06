@@ -160,21 +160,25 @@ import Bouton from "../../../components/Bouton.astro";
         if (messages.items.length > 0) {
           // Récupérer le timestamp de la dernière lecture
           const lastReadTime = localStorage.getItem(`lastRead_${conv.id}`);
-          
+
           // Compter les messages non lus (reçus après la dernière lecture)
           let unreadCount = 0;
           if (lastReadTime) {
-            const unreadMessages = await pb.collection("conversation_messages").getList(1, 100, {
-              filter: `conversation = "${conv.id}" && sender != "${userId}" && created > "${lastReadTime}"`,
-              sort: "-created",
-            });
+            const unreadMessages = await pb
+              .collection("conversation_messages")
+              .getList(1, 100, {
+                filter: `conversation = "${conv.id}" && sender != "${userId}" && created > "${lastReadTime}"`,
+                sort: "-created",
+              });
             unreadCount = unreadMessages.totalItems;
           } else {
             // Si jamais ouvert, compter tous les messages de l'autre
-            const unreadMessages = await pb.collection("conversation_messages").getList(1, 100, {
-              filter: `conversation = "${conv.id}" && sender != "${userId}"`,
-              sort: "-created",
-            });
+            const unreadMessages = await pb
+              .collection("conversation_messages")
+              .getList(1, 100, {
+                filter: `conversation = "${conv.id}" && sender != "${userId}"`,
+                sort: "-created",
+              });
             unreadCount = unreadMessages.totalItems;
           }
 
@@ -194,7 +198,7 @@ import Bouton from "../../../components/Bouton.astro";
       if (conversationsWithMessages.length === 0) {
         activeConversationsSection.classList.add("hidden");
         separator.classList.add("hidden");
-        
+
         // Pas de conversations, donc aucun message non lu
         localStorage.setItem("unreadMessages", JSON.stringify({}));
         window.dispatchEvent(new Event("storage"));
@@ -205,7 +209,11 @@ import Bouton from "../../../components/Bouton.astro";
       activeConversationsSection.classList.remove("hidden");
       activeConversationsList.innerHTML = "";
 
-      for (const { conversation, lastMessage, unreadCount } of conversationsWithMessages) {
+      for (const {
+        conversation,
+        lastMessage,
+        unreadCount,
+      } of conversationsWithMessages) {
         // Déterminer l'autre utilisateur
         const otherUserId =
           conversation.user1 === userId
@@ -246,15 +254,14 @@ import Bouton from "../../../components/Bouton.astro";
 
         // Créer la carte de conversation
         const conversationCard = document.createElement("div");
-        conversationCard.className =
-          `bg-gradient-custom border-2 rounded-4xl shadow-md p-4 cursor-pointer hover:bg-info/20 transition-all ${isUnread ? 'border-accent border-4' : ''}`;
+        conversationCard.className = `bg-gradient-custom border-2 rounded-4xl shadow-md p-4 cursor-pointer hover:bg-info/20 transition-all ${isUnread ? "border-accent border-4" : ""}`;
         conversationCard.innerHTML = `
           <div class="flex justify-between items-center gap-3">
             <div class="min-w-0 flex-1">
-              <h3 class="truncate ${isUnread ? 'font-bold' : ''}">${escapeHtml(displayName)}</h3>
+              <h3 class="truncate ${isUnread ? "font-bold" : ""}">${escapeHtml(displayName)}</h3>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
-              ${isUnread ? '<span class="w-3 h-3 bg-accent rounded-full"></span>' : ''}
+              ${isUnread ? '<span class="w-3 h-3 bg-accent rounded-full"></span>' : ""}
               <p class="text-xs opacity-50">${lastMessageTime}</p>
             </div>
           </div>
@@ -262,7 +269,10 @@ import Bouton from "../../../components/Bouton.astro";
 
         conversationCard.addEventListener("click", () => {
           // Marquer comme lu avant de naviguer
-          localStorage.setItem(`lastRead_${conversation.id}`, new Date().toISOString());
+          localStorage.setItem(
+            `lastRead_${conversation.id}`,
+            new Date().toISOString(),
+          );
           sessionStorage.setItem("conversationId", conversation.id);
           window.location.href = "/interactions/conversation";
         });
@@ -713,14 +723,14 @@ import Bouton from "../../../components/Bouton.astro";
   // Écouter les nouveaux messages pour mettre à jour la liste
   const subscribeToNewMessages = () => {
     if (!pb.authStore.isValid) return;
-    
+
     const userId = pb.authStore.model.id;
-    
+
     pb.collection("conversation_messages").subscribe("*", async (e) => {
       if (e.action === "create" && e.record.sender !== userId) {
         // Un nouveau message est arrivé dans une de nos conversations
         console.log("📬 Nouveau message détecté dans appariement");
-        
+
         // Recharger les conversations pour mettre à jour le badge et les compteurs
         await loadActiveConversations();
       }
@@ -729,7 +739,6 @@ import Bouton from "../../../components/Bouton.astro";
 
   // Démarrer l'écoute des messages
   subscribeToNewMessages();
-
 </script>
 
 <style>

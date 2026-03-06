@@ -25,8 +25,8 @@ const menuItems = [
             <span class="text-xl relative">
               {item.icon}
               {item.showBadge && (
-                <span 
-                  id="notificationBadge" 
+                <span
+                  id="notificationBadge"
                   class="absolute -top-1 -right-1 bg-error text-error-content text-xs font-bold rounded-full w-5 h-5 items-center justify-center"
                   style="display: none;"
                 >
@@ -43,69 +43,90 @@ const menuItems = [
 </nav>
 
 <script type="module">
-    import pb from "/pocketbase/pb.ts";
+  import pb from "/pocketbase/pb.ts";
 
-    // Fonction pour calculer les messages non lus
-    const calculateUnreadMessages = async () => {
-      try {
-        if (!pb.authStore.isValid) return;
-      
-        const userId = pb.authStore.model.id;
-      
-        // Récupérer toutes les conversations actives
-        const conversations = await pb.collection("conversations").getFullList({
-          filter: `(user1 = "${userId}" || user2 = "${userId}") && status = "active"`,
-        });
-      
-        console.log("🔍 Calcul des messages non lus pour", conversations.length, "conversations");
-      
-        const unreadMessages = {};
-      
-        for (const conv of conversations) {
-          const lastReadTime = localStorage.getItem(`lastRead_${conv.id}`);
-        
-          // Compter les messages non lus
-          let unreadCount = 0;
-          if (lastReadTime) {
-            const unreadMsgs = await pb.collection("conversation_messages").getList(1, 100, {
+  // Fonction pour calculer les messages non lus
+  const calculateUnreadMessages = async () => {
+    try {
+      if (!pb.authStore.isValid) return;
+
+      const userId = pb.authStore.model.id;
+
+      // Récupérer toutes les conversations actives
+      const conversations = await pb.collection("conversations").getFullList({
+        filter: `(user1 = "${userId}" || user2 = "${userId}") && status = "active"`,
+      });
+
+      console.log(
+        "🔍 Calcul des messages non lus pour",
+        conversations.length,
+        "conversations",
+      );
+
+      const unreadMessages = {};
+
+      for (const conv of conversations) {
+        const lastReadTime = localStorage.getItem(`lastRead_${conv.id}`);
+
+        // Compter les messages non lus
+        let unreadCount = 0;
+        if (lastReadTime) {
+          const unreadMsgs = await pb
+            .collection("conversation_messages")
+            .getList(1, 100, {
               filter: `conversation = "${conv.id}" && sender != "${userId}" && created > "${lastReadTime}"`,
             });
-            unreadCount = unreadMsgs.totalItems;
-          } else {
-            // Si jamais ouvert, compter tous les messages de l'autre
-            const unreadMsgs = await pb.collection("conversation_messages").getList(1, 100, {
+          unreadCount = unreadMsgs.totalItems;
+        } else {
+          // Si jamais ouvert, compter tous les messages de l'autre
+          const unreadMsgs = await pb
+            .collection("conversation_messages")
+            .getList(1, 100, {
               filter: `conversation = "${conv.id}" && sender != "${userId}"`,
             });
-            unreadCount = unreadMsgs.totalItems;
-          }
-        
-          if (unreadCount > 0) {
-            unreadMessages[conv.id] = unreadCount;
-            console.log(`📬 Conversation ${conv.id}: ${unreadCount} messages non lus`);
-          }
+          unreadCount = unreadMsgs.totalItems;
         }
-      
-        console.log("💾 [Navigation] Sauvegarde des messages non lus:", unreadMessages);
-        localStorage.setItem("unreadMessages", JSON.stringify(unreadMessages));
-        updateNotificationBadge();
-      } catch (err) {
-        console.error("❌ [Navigation] Erreur lors du calcul des messages non lus:", err);
+
+        if (unreadCount > 0) {
+          unreadMessages[conv.id] = unreadCount;
+          console.log(
+            `📬 Conversation ${conv.id}: ${unreadCount} messages non lus`,
+          );
+        }
       }
-    };
+
+      console.log(
+        "💾 [Navigation] Sauvegarde des messages non lus:",
+        unreadMessages,
+      );
+      localStorage.setItem("unreadMessages", JSON.stringify(unreadMessages));
+      updateNotificationBadge();
+    } catch (err) {
+      console.error(
+        "❌ [Navigation] Erreur lors du calcul des messages non lus:",
+        err,
+      );
+    }
+  };
 
   // Fonction pour mettre à jour le badge de notifications
   const updateNotificationBadge = () => {
     const badge = document.getElementById("notificationBadge");
     if (!badge) return;
 
-    const unreadMessages = JSON.parse(localStorage.getItem("unreadMessages") || "{}");
-    const totalUnread = Object.values(unreadMessages).reduce((sum, count) => sum + count, 0);
-    
-    console.log("🔔 Mise à jour du badge:", { 
-      unreadMessages: JSON.stringify(unreadMessages), 
+    const unreadMessages = JSON.parse(
+      localStorage.getItem("unreadMessages") || "{}",
+    );
+    const totalUnread = Object.values(unreadMessages).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
+
+    console.log("🔔 Mise à jour du badge:", {
+      unreadMessages: JSON.stringify(unreadMessages),
       keys: Object.keys(unreadMessages),
       values: Object.values(unreadMessages),
-      totalUnread 
+      totalUnread,
     });
 
     if (totalUnread > 0) {
@@ -124,7 +145,7 @@ const menuItems = [
     console.log("📢 Événement storage détecté");
     updateNotificationBadge();
   });
-  
+
   // Recalculer les messages non lus toutes les 10 secondes
   setInterval(calculateUnreadMessages, 10000);
 </script>

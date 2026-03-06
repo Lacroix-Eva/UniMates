@@ -5,6 +5,7 @@
 Ce fichier doit être un fichier audio MP3 de notification.
 
 Vous pouvez :
+
 1. Créer votre propre son de notification
 2. Utiliser un son libre de droits depuis des sites comme:
    - https://freesound.org/
