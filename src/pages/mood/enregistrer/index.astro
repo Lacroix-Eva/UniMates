@@ -9,9 +9,11 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
 >
   <div class="w-full max-w-sm mx-auto space-y-6">
     <form id="moodForm" class="space-y-6">
-      <div class="bg-base-300 border-2 rounded-4xl shadow-md p-6 space-y-4">
-        <h3 class="font-balsamiq-sans font-bold text-lg text-center">Ton humeur du moment</h3>
-        
+      <div
+        class="bg-base-300 border-2 rounded-4xl shadow-md p-6 space-y-4 bg-gradient-custom"
+      >
+        <h3 class="text-center">Ton humeur du jour</h3>
+
         <div class="grid grid-cols-3 gap-3">
           <label class="cursor-pointer">
             <input
@@ -95,9 +97,139 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
         </div>
       </div>
 
+      <div
+        class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-4"
+      >
+        <div class="space-y-2">
+          <h3 class="text-center">Précise ton état (optionnel)</h3>
+          <p class="text-center opacity-75">
+            Choisis le(s) mot(s) qui ressemble(nt) le plus a ton ressenti du
+            moment.
+          </p>
+        </div>
+
+        <input type="hidden" id="moodDetailInput" name="moodDetail" value="" />
+
+        <div class="flex flex-wrap gap-3 justify-center">
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Motive"
+            aria-pressed="false">Motivé</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Satisfait"
+            aria-pressed="false">Satisfait</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Inspire"
+            aria-pressed="false">Inspiré</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Joyeux"
+            aria-pressed="false">Joyeux</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Fatigue"
+            aria-pressed="false">Fatigué</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Apaise"
+            aria-pressed="false">Apaisé</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Stresse"
+            aria-pressed="false">Stressé</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Reconnaissant"
+            aria-pressed="false">Reconnaissant</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Curieux"
+            aria-pressed="false">Curieux</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Confiant"
+            aria-pressed="false">Confiant</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Fier"
+            aria-pressed="false">Fier</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Calme"
+            aria-pressed="false">Calme</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Soulage"
+            aria-pressed="false">Soulagé</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Deborde"
+            aria-pressed="false">Debordé</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Perdu"
+            aria-pressed="false">Perdu</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Frustre"
+            aria-pressed="false">Frustré</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Anxieux"
+            aria-pressed="false">Anxieux</button
+          >
+          <button
+            type="button"
+            class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
+            data-value="Solitaire"
+            aria-pressed="false">Solitaire</button
+          >
+        </div>
+      </div>
+
       <!-- Note optionnelle -->
-      <div class="bg-base-300 border-2 rounded-4xl shadow-md p-6 space-y-3">
-        <label for="note" class="font-semibold text-left block">
+      <div
+        class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-3"
+      >
+        <label
+          for="note"
+          class="font-balsamiq-sans font-extrabold leading-[160%] text-lg text-center block"
+        >
           Ajoute une note (optionnel)
         </label>
         <textarea
@@ -109,6 +241,16 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
         ></textarea>
       </div>
 
+      <div
+        class="bg-success/10 border-2 border-success/30 rounded-4xl shadow-md p-6 space-y-2"
+      >
+        <h3 class="text-center">Félicitations !</h3>
+        <p class="text-center">
+          Super ! Prendre note de ton humeur t'aide a mieux te comprendre et a
+          reperer ce qui te fait du bien.
+        </p>
+      </div>
+
       <!-- Message d'erreur/succès -->
       <p id="message" class="text-center text-sm font-semibold"></p>
 
@@ -117,7 +259,7 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
         <button
           type="submit"
           id="submitButton"
-          class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-10 border-2 rounded-4xl shadow-md w-full transition-all duration-300 ease-in-out transform bg-base-300 active:bg-info cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          class="flex w-fit items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-10 border-2 rounded-4xl shadow-md transition-all duration-300 ease-in-out transform bg-base-300 active:bg-info cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mx-auto"
         >
           Enregistrer
         </button>
@@ -144,13 +286,51 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
   const form = document.getElementById("moodForm");
   const message = document.getElementById("message");
   const submitButton = document.getElementById("submitButton");
+  const moodDetailInput = document.getElementById("moodDetailInput");
+  const moodDetailChips = document.querySelectorAll(".mood-detail-chip");
+  let selectedMoodDetails = [];
+
+  const syncMoodDetailChips = () => {
+    moodDetailInput.value = selectedMoodDetails.join(", ");
+
+    moodDetailChips.forEach((chip) => {
+      const isSelected = selectedMoodDetails.includes(chip.dataset.value);
+      chip.setAttribute("aria-pressed", isSelected ? "true" : "false");
+      chip.classList.toggle("border-primary", isSelected);
+      chip.classList.toggle("bg-primary", isSelected);
+      chip.classList.toggle("text-primary-content", isSelected);
+      chip.classList.toggle("shadow-md", isSelected);
+      chip.classList.toggle("scale-105", isSelected);
+      chip.classList.toggle("-translate-y-0.5", isSelected);
+    });
+  };
+
+  moodDetailChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const value = chip.dataset.value;
+
+      if (selectedMoodDetails.includes(value)) {
+        selectedMoodDetails = selectedMoodDetails.filter(
+          (item) => item !== value,
+        );
+      } else {
+        selectedMoodDetails = [...selectedMoodDetails, value];
+      }
+
+      syncMoodDetailChips();
+    });
+  });
+
+  syncMoodDetailChips();
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const formData = new FormData(form);
     const mood = formData.get("mood");
+    const moodDetail = (formData.get("moodDetail") || "").toString().trim();
     const note = formData.get("note");
+    const noteText = (note || "").toString().trim();
 
     if (!mood) {
       message.textContent = "Merci de sélectionner ton humeur";
@@ -164,13 +344,45 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
 
     try {
       const userId = pb.authStore.model.id;
-
-      // Créer l'enregistrement de mood
-      await pb.collection("moods").create({
+      const payload = {
         user: userId,
         mood: mood,
-        note: note || "",
-      });
+        note: noteText,
+      };
+
+      // Créer l'enregistrement de mood
+      const createdMood = await pb.collection("moods").create(payload);
+
+      if (moodDetail) {
+        const updatedMood = await pb
+          .collection("moods")
+          .update(createdMood.id, {
+            mood_details: moodDetail,
+          });
+
+        const persistedMoodDetails = (updatedMood.mood_details || "")
+          .toString()
+          .trim();
+
+        if (!persistedMoodDetails) {
+          const fallbackNote = noteText
+            ? `${noteText}\n\nEtat precise: ${moodDetail}`
+            : `Etat precise: ${moodDetail}`;
+
+          await pb.collection("moods").update(createdMood.id, {
+            note: fallbackNote,
+          });
+
+          message.textContent =
+            "Mood enregistre, mais la precision n'est pas supportee sur cette instance PocketBase (ajoutee dans la note).";
+          message.className = "text-center text-sm font-semibold text-warning";
+
+          setTimeout(() => {
+            window.location.href = "/accueil";
+          }, 2200);
+          return;
+        }
+      }
 
       message.textContent = "✨ Mood enregistré avec succès !";
       message.className = "text-center text-sm font-semibold text-success";

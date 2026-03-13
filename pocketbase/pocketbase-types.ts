@@ -136,6 +136,7 @@ export type MoodsRecord = {
 	created?: IsoDateString
 	id: string
 	mood?: string
+	mood_details?: string
 	note?: string
 	updated?: IsoDateString
 	user?: RecordIdString

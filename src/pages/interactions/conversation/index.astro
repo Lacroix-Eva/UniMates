@@ -14,12 +14,13 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
     <!-- Messages -->
     <div
       id="messagesContainer"
-      class="flex-1 text-right overflow-y-auto p-4 space-y-4 bg-base-100 mb-20"
+      class="flex-1 text-right overflow-y-auto space-y-4 bg-base-100"
     >
       <div class="text-center opacity-50 py-8">
         <p>Chargement des messages...</p>
       </div>
     </div>
+    <div id="messagesEnd"></div>
 
     <!-- Input - Fixed en bas -->
     <div class="fixed bottom-20 left-0 right-0 bg-base-200 border-t-2 p-4 z-40">
@@ -291,8 +292,12 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
         messagesContainer.appendChild(messageDiv);
       });
 
-      // Scroll vers le bas
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      // Scroll vers le bas après rendu
+      requestAnimationFrame(() => {
+        document
+          .getElementById("messagesEnd")
+          ?.scrollIntoView({ behavior: "instant" });
+      });
     } catch (err) {
       console.error("❌ Erreur en chargeant les messages:", err);
     }
@@ -325,7 +330,11 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
           }
 
           addMessageToUI(e.record);
-          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          requestAnimationFrame(() => {
+            document
+              .getElementById("messagesEnd")
+              ?.scrollIntoView({ behavior: "smooth" });
+          });
         }
       },
       { expand: "sender" },
