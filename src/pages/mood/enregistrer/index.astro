@@ -114,7 +114,7 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
           <button
             type="button"
             class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
-            data-value="Motive"
+            data-value="Motivé"
             aria-pressed="false">Motivé</button
           >
           <button
@@ -126,7 +126,7 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
           <button
             type="button"
             class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
-            data-value="Inspire"
+            data-value="Inspiré"
             aria-pressed="false">Inspiré</button
           >
           <button
@@ -138,19 +138,19 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
           <button
             type="button"
             class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
-            data-value="Fatigue"
+            data-value="Fatigué"
             aria-pressed="false">Fatigué</button
           >
           <button
             type="button"
             class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
-            data-value="Apaise"
+            data-value="Apaisé"
             aria-pressed="false">Apaisé</button
           >
           <button
             type="button"
             class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
-            data-value="Stresse"
+            data-value="Stressé"
             aria-pressed="false">Stressé</button
           >
           <button
@@ -186,13 +186,13 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
           <button
             type="button"
             class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
-            data-value="Soulage"
+            data-value="Soulagé"
             aria-pressed="false">Soulagé</button
           >
           <button
             type="button"
             class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
-            data-value="Deborde"
+            data-value="Debordé"
             aria-pressed="false">Debordé</button
           >
           <button
@@ -204,7 +204,7 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
           <button
             type="button"
             class="mood-detail-chip inline-flex items-center justify-center px-4 py-2 rounded-full border-2 border-base-content/20 bg-base-100 text-sm font-medium transition-all duration-200 active:scale-95"
-            data-value="Frustre"
+            data-value="Frustré"
             aria-pressed="false">Frustré</button
           >
           <button
@@ -328,9 +328,14 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
 
     const formData = new FormData(form);
     const mood = formData.get("mood");
-    const moodDetail = (formData.get("moodDetail") || "").toString().trim();
+    const moodDetail = selectedMoodDetails.join(", ").trim();
     const note = formData.get("note");
     const noteText = (note || "").toString().trim();
+    const noteWithMoodDetail = moodDetail
+      ? noteText
+        ? `${noteText}`
+        : `Etat precise: ${moodDetail}`
+      : noteText;
 
     if (!mood) {
       message.textContent = "Merci de sélectionner ton humeur";
@@ -347,42 +352,12 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
       const payload = {
         user: userId,
         mood: mood,
-        note: noteText,
+        mood_details: moodDetail,
+        note: noteWithMoodDetail,
       };
 
       // Créer l'enregistrement de mood
-      const createdMood = await pb.collection("moods").create(payload);
-
-      if (moodDetail) {
-        const updatedMood = await pb
-          .collection("moods")
-          .update(createdMood.id, {
-            mood_details: moodDetail,
-          });
-
-        const persistedMoodDetails = (updatedMood.mood_details || "")
-          .toString()
-          .trim();
-
-        if (!persistedMoodDetails) {
-          const fallbackNote = noteText
-            ? `${noteText}\n\nEtat precise: ${moodDetail}`
-            : `Etat precise: ${moodDetail}`;
-
-          await pb.collection("moods").update(createdMood.id, {
-            note: fallbackNote,
-          });
-
-          message.textContent =
-            "Mood enregistre, mais la precision n'est pas supportee sur cette instance PocketBase (ajoutee dans la note).";
-          message.className = "text-center text-sm font-semibold text-warning";
-
-          setTimeout(() => {
-            window.location.href = "/accueil";
-          }, 2200);
-          return;
-        }
-      }
+      await pb.collection("moods").create(payload);
 
       message.textContent = "✨ Mood enregistré avec succès !";
       message.className = "text-center text-sm font-semibold text-success";
