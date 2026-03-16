@@ -1,0 +1,191 @@
+---
+import LayoutProtege from "../../../layouts/LayoutProtege.astro";
+---
+
+<LayoutProtege
+  nomPage="Parler avec mon familier"
+  titre_page="Ton familier t'écoute"
+  intro_page="Dis-lui ce que tu ressens"
+>
+  <div class="w-full max-w-sm mx-auto flex flex-col pb-32">
+    <!-- Messages -->
+    <div id="messagesContainer" class="flex-1 overflow-y-auto space-y-4">
+      <!-- Message de bienvenue -->
+      <div class="chat chat-start">
+        <div class="chat-image">
+          <img
+            id="familierAvatarMsg"
+            src="/familiers/plume.png"
+            alt="Ton familier"
+            class="w-10 h-10 object-contain"
+          />
+        </div>
+        <div class="chat-bubble chat-bubble-secondary">
+          <p id="welcomeText">Coucou ! Je suis là si tu veux me parler. 🌟</p>
+        </div>
+      </div>
+    </div>
+    <div id="messagesEnd"></div>
+  </div>
+
+  <!-- Input - Fixed en bas -->
+  <div class="fixed bottom-20 left-0 right-0 bg-base-200 border-t-2 p-4 z-40">
+    <div class="w-full max-w-sm mx-auto">
+      <div class="flex gap-2">
+        <input
+          id="messageInput"
+          type="text"
+          placeholder="Dis ce que tu ressens..."
+          class="input input-bordered input-sm flex-1"
+          maxlength="500"
+        />
+        <button id="sendButton" class="btn btn-sm btn-accent"> Envoyer </button>
+      </div>
+      <p class="text-xs opacity-50 mt-1 text-center">
+        La réponse de ton familier arrive bientôt ✨
+      </p>
+    </div>
+  </div>
+</LayoutProtege>
+
+<script type="module" is:inline>
+  import pb from "/pocketbase/pb.ts";
+
+  const familierAvatarMsg = document.getElementById("familierAvatarMsg");
+  const welcomeText = document.getElementById("welcomeText");
+  const messagesContainer = document.getElementById("messagesContainer");
+  const messageInput = document.getElementById("messageInput");
+  const sendButton = document.getElementById("sendButton");
+
+  const familierNames = { plume: "Plume", sunny: "Sunny", buzzy: "Buzzy" };
+  const baseImages = {
+    plume: "/familiers/plume.png",
+    sunny: "/familiers/sunny.png",
+    buzzy: "/familiers/buzzy.png",
+  };
+
+  let familierKey = "plume";
+  let familierImagePath = "/familiers/plume.png";
+  let familierName = "Plume";
+
+  const loadFamilier = async () => {
+    if (!pb.authStore.isValid || !pb.authStore.model) return;
+    try {
+      const user = await pb.collection("users").getOne(pb.authStore.model.id);
+      const raw = (user.familier || "plume").toString().toLowerCase();
+      familierKey = baseImages[raw] ? raw : "plume";
+
+      let customisation = user.customisation || {};
+      if (typeof customisation === "string") {
+        try {
+          customisation = JSON.parse(customisation);
+        } catch {
+          customisation = {};
+        }
+      }
+
+      familierImagePath = baseImages[familierKey];
+      if (customisation?.variantId) {
+        const variantIndex =
+          parseInt(customisation.variantId.split("_")[1]) - 1;
+        const variants = {
+          plume: [
+            "/familiers/plume.png",
+            "/familiers/plume2.png",
+            "/familiers/plume3.png",
+            "/familiers/plume4.png",
+            "/familiers/plume5.png",
+            "/familiers/plume6.png",
+            "/familiers/plume7.png",
+          ],
+          sunny: [
+            "/familiers/sunny.png",
+            "/familiers/sunny2.png",
+            "/familiers/sunny3.png",
+            "/familiers/sunny4.png",
+            "/familiers/sunny5.png",
+            "/familiers/sunny6.png",
+            "/familiers/sunny7.png",
+          ],
+          buzzy: [
+            "/familiers/buzzy.png",
+            "/familiers/buzzy2.png",
+            "/familiers/buzzy3.png",
+            "/familiers/buzzy4.png",
+            "/familiers/buzzy5.png",
+            "/familiers/buzzy6.png",
+            "/familiers/buzzy7.png",
+          ],
+        };
+        const list = variants[familierKey] || variants.plume;
+        familierImagePath = list[variantIndex] || list[0];
+      }
+
+      familierName = familierNames[familierKey] || "Ton familier";
+
+      if (familierAvatarMsg) {
+        familierAvatarMsg.src = familierImagePath;
+        familierAvatarMsg.alt = familierName;
+      }
+      if (welcomeText) {
+        welcomeText.textContent = `Coucou ! Je suis ${familierName} et je suis là si tu veux me parler. 🌟`;
+      }
+    } catch (err) {
+      console.error("Erreur chargement familier:", err);
+    }
+  };
+
+  const appendMessage = (text, isUser) => {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = `chat ${isUser ? "chat-end" : "chat-start"}`;
+
+    if (!isUser) {
+      const imageDiv = document.createElement("div");
+      imageDiv.className = "chat-image";
+      const avatar = document.createElement("img");
+      avatar.src = familierImagePath;
+      avatar.alt = familierName;
+      avatar.className = "w-10 h-10 object-contain";
+      imageDiv.appendChild(avatar);
+      messageDiv.appendChild(imageDiv);
+    }
+
+    const bubble = document.createElement("div");
+    bubble.className = `chat-bubble ${isUser ? "chat-bubble-accent" : "chat-bubble-secondary"}`;
+    bubble.textContent = text;
+    messageDiv.appendChild(bubble);
+
+    messagesContainer.appendChild(messageDiv);
+    requestAnimationFrame(() => {
+      document
+        .getElementById("messagesEnd")
+        ?.scrollIntoView({ behavior: "smooth" });
+    });
+  };
+
+  const sendMessage = () => {
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    appendMessage(text, true);
+    messageInput.value = "";
+
+    // Placeholder — réponse IA à intégrer plus tard
+    setTimeout(() => {
+      appendMessage(
+        "Je t'entends ! La réponse de ton familier arrivera bientôt... 💫",
+        false,
+      );
+    }, 800);
+  };
+
+  sendButton.addEventListener("click", sendMessage);
+  messageInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  loadFamilier();
+</script>

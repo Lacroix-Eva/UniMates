@@ -8,14 +8,16 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
   intro_page="(date_du_jour)"
 >
   <div class="w-full max-w-sm mx-auto space-y-6">
-     <div>
+    <div>
       <a
         href="/mood/enregistrer"
         class="bg-gradient-custom block bg-base-300 border-2 rounded-4xl shadow-md p-6 transition-all duration-300 ease-in-out transform active:bg-info cursor-pointer"
       >
         <div class="flex items-center justify-between gap-4">
           <div class="flex-1">
-            <h2 id="moodCardTitle" class="text-left mb-1">Comment te sens-tu ?</h2>
+            <h2 id="moodCardTitle" class="text-left mb-1">
+              Comment te sens-tu ?
+            </h2>
             <p id="moodCardSubtitle" class="text-sm text-left opacity-80">
               Enregistre ton mood du jour
             </p>
@@ -36,7 +38,10 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
           <p id="interactionsCardSubtitle" class="text-sm text-left opacity-80">
             Connecte-toi avec d'autres
           </p>
-          <p id="interactionsCardStatus" class="text-xs text-left mt-1 opacity-70">
+          <p
+            id="interactionsCardStatus"
+            class="text-xs text-left mt-1 opacity-70"
+          >
             Statut: Actif
           </p>
         </div>
@@ -45,9 +50,13 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
     </a>
 
     <!-- Card Familier -->
-    <div class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-5">
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-5"
+    >
       <!-- En-tête avec familier -->
-      <div class="flex items-center gap-4 pb-4 border-b-2 border-base-content/10">
+      <div
+        class="flex items-center gap-4 pb-4 border-b-2 border-base-content/10"
+      >
         <img
           id="cardFamilierImage"
           src="/familiers/plume.png"
@@ -79,18 +88,36 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
           max="10"></progress>
 
         <p id="progressStatus" class="text-sm text-center opacity-80 py-2">
-          Chaque mood aide <span id="familierNameInStatus" class="font-semibold">Plume</span> à grandir !
+          Chaque mood aide <span id="familierNameInStatus" class="font-semibold"
+            >Plume</span
+          > à grandir !
         </p>
       </div>
     </div>
 
-    <!-- Bouton déconnexion -->
-    <button
-      id="logoutButton"
-      class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-10 border-2 rounded-4xl shadow-md w-full transition-all duration-300 ease-in-out transform bg-base-300 active:bg-info cursor-pointer"
+    <!-- Card Parler avec le familier -->
+    <a
+      href="/familier/parler"
+      class="bg-gradient-custom block bg-base-300 border-2 rounded-4xl shadow-md p-6 transition-all duration-300 ease-in-out transform active:bg-info cursor-pointer"
     >
-      Se déconnecter
-    </button>
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1">
+          <h2 class="text-left mb-1">Besoin de parler ?</h2>
+          <p class="text-sm text-left opacity-80">Discute avec ton familier</p>
+        </div>
+        <div class="text-4xl">→</div>
+      </div>
+    </a>
+
+    <!-- Bouton déconnexion -->
+    <div class="flex justify-center">
+      <button
+        id="logoutButton"
+        class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-10 border-2 rounded-4xl shadow-md transition-all duration-300 ease-in-out transform bg-base-300 active:bg-info cursor-pointer"
+      >
+        Se déconnecter
+      </button>
+    </div>
   </div>
 </LayoutProtege>
 
@@ -106,8 +133,12 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
   const moodProgress = document.getElementById("moodProgress");
   const moodCardTitle = document.getElementById("moodCardTitle");
   const moodCardSubtitle = document.getElementById("moodCardSubtitle");
-  const interactionsCardSubtitle = document.getElementById("interactionsCardSubtitle");
-  const interactionsCardStatus = document.getElementById("interactionsCardStatus");
+  const interactionsCardSubtitle = document.getElementById(
+    "interactionsCardSubtitle",
+  );
+  const interactionsCardStatus = document.getElementById(
+    "interactionsCardStatus",
+  );
 
   let currentUser = null;
 
@@ -320,7 +351,8 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
         moodProgress.max = 10;
       }
       if (moodCardTitle) moodCardTitle.textContent = "Comment te sens-tu ?";
-      if (moodCardSubtitle) moodCardSubtitle.textContent = "Enregistre ton mood du jour";
+      if (moodCardSubtitle)
+        moodCardSubtitle.textContent = "Enregistre ton mood du jour";
     }
   };
 
