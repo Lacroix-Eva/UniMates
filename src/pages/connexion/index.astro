@@ -43,7 +43,7 @@ import Bouton from "../../components/Bouton.astro";
   </form>
 
   <script type="module" is:inline>
-    import pb from "/pocketbase/pb.ts";
+    import pb from "/pocketbase/pb.js";
 
     // Rediriger si déjà connecté
     if (pb.authStore.isValid) {

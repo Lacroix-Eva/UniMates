@@ -17,7 +17,7 @@ const { ...item } = Astro.props;
     <HeaderSimple item={{ titre: item.titre_page, intro: item.intro_page }} />
     <slot />
     <script type="module" is:inline>
-      import pb from "/pocketbase/pb.ts";
+      import pb from "/pocketbase/pb.js";
 
       if (!pb.authStore.isValid) {
         window.location.href = "/connexion";
