@@ -9,5 +9,5 @@ export default defineConfig({
     plugins: [tailwindcss()]
   },
   output: 'static',
-  trailingSlash: 'always',
+  trailingSlash: 'ignore',
 });

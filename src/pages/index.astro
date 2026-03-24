@@ -40,10 +40,8 @@ import Bouton from "../components/Bouton.astro";
       />
     </div>
     <div class="mt-10 flex flex-col items-center gap-4 px-6">
-      <Bouton text="Commencer" url="/inscription" variant="beige" />
-      <Bouton text="Se connecter" url="/connexion" variant="jaune" />
-      <button onclick="window.location.href='/inscription/'">Commencer</button>
-      <button onclick="window.location.href='/connexion/'">Se connecter</button>
+      <Bouton text="Commencer" url="/inscription/index.html" variant="beige" />
+      <Bouton text="Se connecter" url="/connexion/index.html" variant="jaune" />
     </div>
 
     <script type="module">
@@ -51,7 +49,7 @@ import Bouton from "../components/Bouton.astro";
 
       // Rediriger si déjà connecté
       if (pb.authStore.isValid) {
-        window.location.href = "/accueil";
+        window.location.href = "/accueil/index.html";
       }
     </script>
   </body>

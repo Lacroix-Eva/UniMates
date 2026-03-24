@@ -43,7 +43,7 @@ import Bouton from "../../components/Bouton.astro";
     >
       Continuer
     </button>
-    <Bouton text="J'ai déjà un compte" url="/connexion" variant="jaune" />
+    <Bouton text="J'ai déjà un compte" url="/connexion/index.html" variant="jaune" />
   </div>
 
   <script type="module">
@@ -51,7 +51,7 @@ import Bouton from "../../components/Bouton.astro";
 
     // Rediriger si déjà connecté
     if (pb.authStore.isValid) {
-      window.location.href = "/accueil";
+      window.location.href = "/accueil/index.html";
     }
 
     console.log("Script started");
@@ -76,7 +76,7 @@ import Bouton from "../../components/Bouton.astro";
 
     continuerButton.addEventListener("click", () => {
       if (!continuerButton.disabled) {
-        window.location.href = "/inscription/info-perso";
+        window.location.href = "/inscription/info-perso/index.html";
       }
     });
   </script>

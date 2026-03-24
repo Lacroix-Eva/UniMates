@@ -48,7 +48,7 @@ import Bouton from "../../components/Bouton.astro";
       >
         S'inscrire
       </button>
-      <Bouton text="J'ai déjà un compte" url="/connexion" variant="jaune" />
+      <Bouton text="J'ai déjà un compte" url="/connexion/index.html" variant="jaune" />
       <button
         id="googlelogin"
         type="button"
@@ -65,7 +65,7 @@ import Bouton from "../../components/Bouton.astro";
 
     // Rediriger si déjà connecté
     if (pb.authStore.isValid) {
-      window.location.href = "/inscription/personnalisation";
+      window.location.href = "/inscription/personnalisation/index.html";
     }
 
     const form = document.getElementById("registerForm");
@@ -88,7 +88,7 @@ import Bouton from "../../components/Bouton.astro";
       if (!familierValue) {
         document.getElementById("msg").textContent =
           "Veuillez d'abord choisir un familier";
-        window.location.href = "/inscription";
+        window.location.href = "/inscription/index.html";
         return;
       }
 
@@ -111,7 +111,7 @@ import Bouton from "../../components/Bouton.astro";
         localStorage.removeItem("familier");
 
         // Rediriger vers le tableau de bord ou page suivante
-        location.href = "/inscription/personnalisation";
+        location.href = "/inscription/personnalisation/index.html";
       } catch (err) {
         let errorMessage = "Échec de l'inscription";
 
@@ -157,7 +157,7 @@ import Bouton from "../../components/Bouton.astro";
       if (!familierValue) {
         document.getElementById("msg").textContent =
           "Veuillez d'abord choisir un familier";
-        window.location.href = "/inscription";
+        window.location.href = "/inscription/index.html";
         return;
       }
 
@@ -172,7 +172,7 @@ import Bouton from "../../components/Bouton.astro";
         }
 
         localStorage.removeItem("familier");
-        location.href = "/inscription/personnalisation";
+        location.href = "/inscription/personnalisation/index.html";
       } catch (err) {
         document.getElementById("msg").textContent =
           "Échec de connexion Google";

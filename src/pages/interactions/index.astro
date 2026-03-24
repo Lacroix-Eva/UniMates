@@ -74,7 +74,7 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
       </button>
 
       <a
-        href="/accueil"
+        href="/accueil/index.html"
         class="inline-flex items-center justify-center text-base-content font-balsamiq-sans text-base py-2 px-8 w-full transition-all opacity-70 hover:opacity-100"
       >
         Retour
@@ -90,7 +90,7 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
 
   // Rediriger si pas connecté
   if (!pb.authStore.isValid) {
-    window.location.href = "/connexion";
+    window.location.href = "/connexion/index.html";
   }
 
   const startButton = document.getElementById("startInteractionButton");
@@ -145,11 +145,11 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
 
   startButton.addEventListener("click", async () => {
     await markIntroAsAccepted();
-    window.location.href = "/interactions/appariement";
+    window.location.href = "/interactions/appariement/index.html";
   });
 
   const shouldShowIntro = await getShouldShowIntro();
   if (!shouldShowIntro) {
-    window.location.href = "/interactions/appariement";
+    window.location.href = "/interactions/appariement/index.html";
   }
 </script>

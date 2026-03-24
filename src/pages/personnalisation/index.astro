@@ -39,7 +39,7 @@ import Bouton from "../../components/Bouton.astro";
       >
         Sauvegarder
       </button>
-      <Bouton text="Retour à l'accueil" url="/accueil" variant="jaune" />
+      <Bouton text="Retour à l'accueil" url="/accueil/index.html" variant="jaune" />
     </div>
   </section>
 
@@ -170,7 +170,7 @@ import Bouton from "../../components/Bouton.astro";
 
     const loadUser = async () => {
       if (!pb.authStore.isValid || !pb.authStore.model) {
-        window.location.href = "/connexion";
+        window.location.href = "/connexion/index.html";
         return;
       }
 

@@ -88,7 +88,7 @@ import Bouton from "../../../components/Bouton.astro";
 
   // Rediriger si pas connecté
   if (!pb.authStore.isValid) {
-    window.location.href = "/connexion";
+    window.location.href = "/connexion/index.html";
   }
 
   const statusCard = document.getElementById("statusCard");
@@ -274,7 +274,7 @@ import Bouton from "../../../components/Bouton.astro";
             new Date().toISOString(),
           );
           sessionStorage.setItem("conversationId", conversation.id);
-          window.location.href = "/interactions/conversation";
+          window.location.href = "/interactions/conversation/index.html";
         });
 
         activeConversationsList.appendChild(conversationCard);
@@ -335,7 +335,7 @@ import Bouton from "../../../components/Bouton.astro";
           "Enregistre ton mood du jour avant de chercher une interaction";
         loadingSpinner.style.display = "none";
         setTimeout(() => {
-          window.location.href = "/mood/enregistrer";
+          window.location.href = "/mood/enregistrer/index.html";
         }, 2000);
         return null;
       }
@@ -564,7 +564,7 @@ import Bouton from "../../../components/Bouton.astro";
 
       // Rediriger vers la conversation
       sessionStorage.setItem("conversationId", conversation.id);
-      window.location.href = `/interactions/conversation`;
+      window.location.href = `/interactions/conversation/index.html`;
     } catch (err) {
       console.error("❌ Erreur lors de la création de la conversation:", err);
       alert("Erreur lors de la création de la conversation: " + err.message);
