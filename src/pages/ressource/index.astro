@@ -1,0 +1,301 @@
+---
+import LayoutProtege from "../../layouts/LayoutProtege.astro";
+---
+
+<LayoutProtege
+  nomPage="Ressource d'accompagnement"
+  titre_page="Ressource d'accompagnement"
+  intro_page="Outils et conseils bien-être"
+>
+  <div class="w-full max-w-sm mx-auto space-y-6">
+    <div
+      class="bg-success/10 border-2 border-success/30 rounded-4xl shadow-md p-6 space-y-2"
+    >
+      <div class="flex items-center gap-4">
+        <img
+          id="resourceFamilierImage"
+          src="/familiers/plume.png"
+          alt="Ton familier"
+          class="w-14 h-14 object-contain"
+        />
+        <div class="flex-1 space-y-1">
+          <h3 class="text-left">
+            <span id="resourceFamilierName">Plume</span> est avec toi
+          </h3>
+          <p id="resourceFamilierMessage" class="text-left">
+            Voici quelques ressources pour prendre soin de toi au quotidien !
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <a
+      href="#respiration"
+      class="bg-gradient-custom block bg-base-300 border-2 rounded-4xl shadow-md p-6 transition-all duration-300 ease-in-out transform active:bg-info cursor-pointer"
+    >
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1">
+          <h2 class="text-left mb-1">Exercices de respirations</h2>
+          <p class="text-sm text-left opacity-80">
+            Respire pour relacher la pression
+          </p>
+        </div>
+        <div class="text-4xl">→</div>
+      </div>
+    </a>
+
+    <a
+      href="#anti-stress"
+      class="bg-gradient-custom block bg-base-300 border-2 rounded-4xl shadow-md p-6 transition-all duration-300 ease-in-out transform active:bg-info cursor-pointer"
+    >
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1">
+          <h2 class="text-left mb-1">Conseils anti-stress</h2>
+          <p class="text-sm text-left opacity-80">
+            Des astuces concretes au quotidien
+          </p>
+        </div>
+        <div class="text-4xl">→</div>
+      </div>
+    </a>
+
+    <a
+      href="#organisation"
+      class="bg-gradient-custom block bg-base-300 border-2 rounded-4xl shadow-md p-6 transition-all duration-300 ease-in-out transform active:bg-info cursor-pointer"
+    >
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1">
+          <h2 class="text-left mb-1">Organisation de travail</h2>
+          <p class="text-sm text-left opacity-80">
+            Mieux structurer ta semaine
+          </p>
+        </div>
+        <div class="text-4xl">→</div>
+      </div>
+    </a>
+
+    <a
+      href="#mmi"
+      class="bg-gradient-custom block bg-base-300 border-2 rounded-4xl shadow-md p-6 transition-all duration-300 ease-in-out transform active:bg-info cursor-pointer"
+    >
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1">
+          <h2 class="text-left mb-1">Ressources MMI</h2>
+          <p class="text-sm text-left opacity-80">
+            Les liens utiles de ta formation
+          </p>
+        </div>
+        <div class="text-4xl">→</div>
+      </div>
+    </a>
+
+    <div
+      id="respiration"
+      class="bg-base-300 border-2 rounded-4xl shadow-md p-6 space-y-2"
+    >
+      <h3 class="text-left">Exercices de respirations</h3>
+      <p class="text-sm opacity-80">
+        Essaie 4-4-6 : inspire 4 secondes, bloque 4 secondes, expire 6 secondes.
+        Recommence pendant 2 minutes.
+      </p>
+    </div>
+
+    <div
+      id="anti-stress"
+      class="bg-base-300 border-2 rounded-4xl shadow-md p-6 space-y-2"
+    >
+      <h3 class="text-left">Conseils anti-stress</h3>
+      <p class="text-sm opacity-80">
+        Coupe les notifications 30 minutes, fais une priorite, puis avance par
+        petites etapes.
+      </p>
+    </div>
+
+    <div
+      id="organisation"
+      class="bg-base-300 border-2 rounded-4xl shadow-md p-6 space-y-2"
+    >
+      <h3 class="text-left">Organisation de travail</h3>
+      <p class="text-sm opacity-80">
+        Planifie 3 taches importantes max par jour, avec des blocs de
+        concentration de 25 a 45 minutes.
+      </p>
+    </div>
+
+    <div
+      id="mmi"
+      class="bg-base-300 border-2 rounded-4xl shadow-md p-6 space-y-2"
+    >
+      <h3 class="text-left">Ressources MMI</h3>
+      <p class="text-sm opacity-80">
+        Pense a verifier vos plateformes de cours, votre messagerie et les
+        espaces de rendu de projets.
+      </p>
+    </div>
+
+    <div
+      class="bg-error/15 border-2 border-error/40 rounded-4xl shadow-md p-6 space-y-2"
+    >
+      <h3 class="text-left text-error">En cas d'urgence</h3>
+      <p class="text-sm opacity-90">
+        Si tu te sens en danger immediat, appelle le 15. Tu peux aussi contacter
+        le 3114 (numero national de prevention du suicide, 24h/24, 7j/7).
+      </p>
+    </div>
+  </div>
+</LayoutProtege>
+
+<script type="module" is:inline>
+  import pb from "/pocketbase/pb.js";
+
+  const familierImage = document.getElementById("resourceFamilierImage");
+  const familierName = document.getElementById("resourceFamilierName");
+  const familierMessage = document.getElementById("resourceFamilierMessage");
+
+  const baseImages = {
+    plume: "/familiers/plume.png",
+    sunny: "/familiers/sunny.png",
+    buzzy: "/familiers/buzzy.png",
+  };
+
+  const variants = {
+    plume: [
+      "/familiers/plume.png",
+      "/familiers/plume2.png",
+      "/familiers/plume3.png",
+      "/familiers/plume4.png",
+      "/familiers/plume5.png",
+      "/familiers/plume6.png",
+      "/familiers/plume7.png",
+    ],
+    sunny: [
+      "/familiers/sunny.png",
+      "/familiers/sunny2.png",
+      "/familiers/sunny3.png",
+      "/familiers/sunny4.png",
+      "/familiers/sunny5.png",
+      "/familiers/sunny6.png",
+      "/familiers/sunny7.png",
+    ],
+    buzzy: [
+      "/familiers/buzzy.png",
+      "/familiers/buzzy2.png",
+      "/familiers/buzzy3.png",
+      "/familiers/buzzy4.png",
+      "/familiers/buzzy5.png",
+      "/familiers/buzzy6.png",
+      "/familiers/buzzy7.png",
+    ],
+  };
+
+  const familierNames = {
+    plume: "Plume",
+    sunny: "Sunny",
+    buzzy: "Buzzy",
+  };
+
+  const familierMessages = {
+    plume: "On avance doucement, une etape a la fois.",
+    sunny: "Je te propose des pistes simples pour t'organiser.",
+    buzzy: "On remet de l'energie positive pas a pas.",
+  };
+
+  const normalizeFamilierKey = (rawValue) => {
+    const raw = (rawValue || "").toString().trim().toLowerCase();
+    const aliases = {
+      plum: "plume",
+      plume: "plume",
+      sunny: "sunny",
+      buzzy: "buzzy",
+    };
+    return aliases[raw] || "plume";
+  };
+
+  const parseCustomisation = (customisationRaw) => {
+    if (!customisationRaw) {
+      return {};
+    }
+
+    if (typeof customisationRaw === "string") {
+      try {
+        const parsed = JSON.parse(customisationRaw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+
+    return typeof customisationRaw === "object" ? customisationRaw : {};
+  };
+
+  const resolveImagePath = (familierKey, customisationRaw) => {
+    const customisation = parseCustomisation(customisationRaw);
+
+    const list = variants[familierKey] || variants.plume;
+    const variantRaw =
+      customisation?.variantId ??
+      customisation?.selectedId ??
+      customisation?.variant;
+
+    if (variantRaw === undefined || variantRaw === null) {
+      return list[0];
+    }
+
+    const variantText = String(variantRaw);
+    const match = variantText.match(/(\d+)/);
+    const variantNumber = match ? parseInt(match[1], 10) : NaN;
+
+    if (!Number.isFinite(variantNumber) || variantNumber < 1) {
+      return list[0];
+    }
+
+    const variantIndex = variantNumber - 1;
+    return list[variantIndex] || list[0];
+  };
+
+  const applyFamilierToCard = (imagePath, familierKey) => {
+    const safeKey = normalizeFamilierKey(familierKey || "plume");
+    const displayName = familierNames[safeKey] || "Ton familier";
+
+    if (familierImage) {
+      familierImage.src = imagePath;
+      familierImage.alt = displayName;
+    }
+
+    if (familierName) {
+      familierName.textContent = displayName;
+    }
+
+    if (familierMessage) {
+      familierMessage.textContent =
+        familierMessages[safeKey] ||
+        "Voici quelques ressources pour prendre soin de toi au quotidien !";
+    }
+  };
+
+  const loadFamilier = async () => {
+    if (!pb.authStore.isValid || !pb.authStore.model) {
+      return;
+    }
+
+    let user = pb.authStore.model;
+
+    try {
+      user = await pb.collection("users").getOne(user.id);
+    } catch (err) {
+      console.error("Erreur lors du chargement du profil:", err);
+    }
+
+    const familierKey = normalizeFamilierKey(user.familier || "plume");
+    const imagePath = resolveImagePath(
+      familierKey,
+      user.customisation ||
+        pb.authStore?.model?.customisation ||
+        localStorage.getItem("customisation"),
+    );
+
+    applyFamilierToCard(imagePath, familierKey);
+  };
+
+  loadFamilier();
+</script>

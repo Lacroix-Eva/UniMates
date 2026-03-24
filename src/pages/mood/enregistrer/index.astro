@@ -290,6 +290,88 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
   const moodDetailChips = document.querySelectorAll(".mood-detail-chip");
   let selectedMoodDetails = [];
 
+  const getTodayRangeIso = () => {
+    const now = new Date();
+    const start = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+    const end = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
+
+    return {
+      startIso: start.toISOString(),
+      endIso: end.toISOString(),
+    };
+  };
+
+  const fetchTodayMoods = async (userId) => {
+    const { startIso, endIso } = getTodayRangeIso();
+    return pb.collection("moods").getFullList({
+      filter: `user = "${userId}" && created >= "${startIso}" && created <= "${endIso}"`,
+      sort: "-created",
+    });
+  };
+
+  const loadTodayMood = async () => {
+    if (!pb.authStore.isValid || !pb.authStore.model) {
+      return null;
+    }
+
+    try {
+      const userId = pb.authStore.model.id;
+      const moods = await fetchTodayMoods(userId);
+      const todayMood = moods[0] || null;
+      if (!todayMood) {
+        submitButton.textContent = "Enregistrer";
+        return null;
+      }
+
+      const moodRadio = form.querySelector(
+        `input[name="mood"][value="${todayMood.mood}"]`,
+      );
+      if (moodRadio) {
+        moodRadio.checked = true;
+      }
+
+      const noteField = form.querySelector("#note");
+      if (noteField) {
+        noteField.value = (todayMood.note || "").toString();
+      }
+
+      const details = (todayMood.mood_details || "")
+        .toString()
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+      selectedMoodDetails = details;
+      syncMoodDetailChips();
+
+      submitButton.textContent = "Mettre a jour";
+      message.textContent =
+        "Tu as deja un mood aujourd'hui. Tu peux le modifier.";
+      message.className = "text-center text-sm font-semibold text-info";
+
+      return todayMood;
+    } catch (err) {
+      console.error("Erreur lors du chargement du mood du jour:", err);
+      return null;
+    }
+  };
+
   const syncMoodDetailChips = () => {
     moodDetailInput.value = selectedMoodDetails.join(", ");
 
@@ -323,6 +405,13 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
 
   syncMoodDetailChips();
 
+  let cachedTodayMood = null;
+  submitButton.disabled = true;
+  loadTodayMood().then((todayMood) => {
+    cachedTodayMood = todayMood;
+    submitButton.disabled = false;
+  });
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -348,43 +437,54 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
         user: userId,
         mood: mood,
         note: noteText,
+        mood_details: moodDetail,
       };
 
-      // Créer l'enregistrement de mood
-      const createdMood = await pb.collection("moods").create(payload);
+      // Always re-check today mood server-side right before saving to avoid race conditions.
+      const todayMoods = await fetchTodayMoods(userId);
+      cachedTodayMood = todayMoods[0] || null;
 
-      if (moodDetail) {
-        const updatedMood = await pb
+      let savedMood = null;
+      let isUpdate = false;
+
+      if (cachedTodayMood?.id) {
+        isUpdate = true;
+        savedMood = await pb
           .collection("moods")
-          .update(createdMood.id, {
-            mood_details: moodDetail,
-          });
-
-        const persistedMoodDetails = (updatedMood.mood_details || "")
-          .toString()
-          .trim();
-
-        if (!persistedMoodDetails) {
-          const fallbackNote = noteText
-            ? `${noteText}\n\nEtat precise: ${moodDetail}`
-            : `Etat precise: ${moodDetail}`;
-
-          await pb.collection("moods").update(createdMood.id, {
-            note: fallbackNote,
-          });
-
-          message.textContent =
-            "Mood enregistre, mais la precision n'est pas supportee sur cette instance PocketBase (ajoutee dans la note).";
-          message.className = "text-center text-sm font-semibold text-warning";
-
-          setTimeout(() => {
-            window.location.href = "/accueil/index.html";
-          }, 2200);
-          return;
-        }
+          .update(cachedTodayMood.id, payload);
+      } else {
+        savedMood = await pb.collection("moods").create(payload);
       }
 
-      message.textContent = "✨ Mood enregistré avec succès !";
+      const persistedMoodDetails = (savedMood.mood_details || "")
+        .toString()
+        .trim();
+
+      if (moodDetail && !persistedMoodDetails) {
+        const fallbackNote = noteText
+          ? `${noteText}\n\nEtat precise: ${moodDetail}`
+          : `Etat precise: ${moodDetail}`;
+
+        savedMood = await pb.collection("moods").update(savedMood.id, {
+          note: fallbackNote,
+        });
+
+        message.textContent = isUpdate
+          ? "Mood mis a jour, mais la precision n'est pas supportee sur cette instance PocketBase (ajoutee dans la note)."
+          : "Mood enregistre, mais la precision n'est pas supportee sur cette instance PocketBase (ajoutee dans la note).";
+        message.className = "text-center text-sm font-semibold text-warning";
+
+        setTimeout(() => {
+          window.location.href = "/accueil/index.html";
+        }, 2200);
+        return;
+      }
+
+      cachedTodayMood = savedMood;
+
+      message.textContent = isUpdate
+        ? "✨ Mood mis a jour avec succes !"
+        : "✨ Mood enregistre avec succes !";
       message.className = "text-center text-sm font-semibold text-success";
 
       // Rediriger vers l'accueil après 1.5s

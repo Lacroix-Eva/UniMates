@@ -109,6 +109,22 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
       </div>
     </a>
 
+    <!-- Card Ressource d'accompagnement -->
+    <a
+      href="/ressource/index.html"
+      class="bg-gradient-custom block bg-base-300 border-2 rounded-4xl shadow-md p-6 transition-all duration-300 ease-in-out transform active:bg-info cursor-pointer"
+    >
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1">
+          <h2 class="text-left mb-1">Ressource d'accompagnement</h2>
+          <p class="text-sm text-left opacity-80">
+            Outils et conseils bien-etre
+          </p>
+        </div>
+        <div class="text-4xl">→</div>
+      </div>
+    </a>
+
     <!-- Bouton déconnexion -->
     <div class="flex justify-center">
       <button
@@ -139,6 +155,47 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
   const interactionsCardStatus = document.getElementById(
     "interactionsCardStatus",
   );
+
+  const updateMoodCardTexts = (hasMoodToday) => {
+    if (moodCardTitle) {
+      moodCardTitle.textContent = hasMoodToday
+        ? "Tu veux changer ton mood du jour ?"
+        : "Comment te sens-tu ?";
+    }
+
+    if (moodCardSubtitle) {
+      moodCardSubtitle.textContent = hasMoodToday
+        ? "Tu peux le mettre a jour si besoin"
+        : "Enregistre ton mood du jour";
+    }
+  };
+
+  const getTodayRangeIso = () => {
+    const now = new Date();
+    const start = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+    const end = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
+
+    return {
+      startIso: start.toISOString(),
+      endIso: end.toISOString(),
+    };
+  };
 
   let currentUser = null;
 
@@ -275,12 +332,13 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
   };
 
   const loadMoodProgress = async () => {
-    if (!pb.authStore.isValid || !pb.authStore.model) {
+    const user = await getCurrentUser();
+    if (!user) {
       return;
     }
 
     try {
-      const userId = pb.authStore.model.id;
+      const userId = user.id;
       const moods = await pb.collection("moods").getFullList({
         filter: `user = "${userId}"`,
       });
@@ -290,29 +348,11 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
       const progressValue = Math.min(count, maxMoods);
       const remaining = Math.max(0, maxMoods - count);
 
-      const now = new Date();
-      const startOfDay = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        0,
-        0,
-        0,
-      );
-      const endOfDay = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        23,
-        59,
-        59,
-        999,
-      );
-
-      const hasMoodToday = moods.some((mood) => {
-        const createdAt = new Date(mood.created);
-        return createdAt >= startOfDay && createdAt <= endOfDay;
+      const { startIso, endIso } = getTodayRangeIso();
+      const moodsToday = await pb.collection("moods").getList(1, 1, {
+        filter: `user = "${userId}" && created >= "${startIso}" && created <= "${endIso}"`,
       });
+      const hasMoodToday = moodsToday.totalItems > 0;
 
       if (moodCount) moodCount.textContent = count;
       if (moodProgress) {
@@ -320,15 +360,7 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
         moodProgress.max = maxMoods;
       }
 
-      if (moodCardTitle && moodCardSubtitle) {
-        if (hasMoodToday) {
-          moodCardTitle.textContent = "Tu veux changer ton mood du jour ?";
-          moodCardSubtitle.textContent = "Tu peux le mettre à jour si besoin";
-        } else {
-          moodCardTitle.textContent = "Comment te sens-tu ?";
-          moodCardSubtitle.textContent = "Enregistre ton mood du jour";
-        }
-      }
+      updateMoodCardTexts(hasMoodToday);
 
       if (progressStatus) {
         const familierName = cardFamilierName?.textContent || "ton familier";

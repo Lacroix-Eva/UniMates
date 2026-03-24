@@ -6,10 +6,10 @@ const { titre, intro } = Astro.props;
   <div class="flex items-center -ml-6">
     <a href="/">
       <img
-      id="familierImage"
-      src=""
-      alt="Ton familier"
-      class="w-24 h-24 object-contain cursor-pointer"
+        id="familierImage"
+        src=""
+        alt="Ton familier"
+        class="w-24 h-24 object-contain cursor-pointer"
       />
     </a>
     <div>
@@ -31,18 +31,122 @@ const { titre, intro } = Astro.props;
       buzzy: "/familiers/buzzy.png",
     };
 
+    const familierVariants = {
+      plume: [
+        "/familiers/plume.png",
+        "/familiers/plume2.png",
+        "/familiers/plume3.png",
+        "/familiers/plume4.png",
+        "/familiers/plume5.png",
+        "/familiers/plume6.png",
+        "/familiers/plume7.png",
+      ],
+      sunny: [
+        "/familiers/sunny.png",
+        "/familiers/sunny2.png",
+        "/familiers/sunny3.png",
+        "/familiers/sunny4.png",
+        "/familiers/sunny5.png",
+        "/familiers/sunny6.png",
+        "/familiers/sunny7.png",
+      ],
+      buzzy: [
+        "/familiers/buzzy.png",
+        "/familiers/buzzy2.png",
+        "/familiers/buzzy3.png",
+        "/familiers/buzzy4.png",
+        "/familiers/buzzy5.png",
+        "/familiers/buzzy6.png",
+        "/familiers/buzzy7.png",
+      ],
+    };
+
+    const normalizeFamilierKey = (rawValue) => {
+      const raw = (rawValue || "").toString().trim().toLowerCase();
+      const aliases = {
+        plum: "plume",
+        plume: "plume",
+        sunny: "sunny",
+        buzzy: "buzzy",
+      };
+      return aliases[raw] || "plume";
+    };
+
     const resolveKey = () => {
       const fromAuth = pb.authStore?.model?.familier;
       const fromStorage = localStorage.getItem("familier");
-      const raw = (fromAuth || fromStorage || "plume").toString().toLowerCase();
-      return familierMap[raw] ? raw : "plume";
+      return normalizeFamilierKey(fromAuth || fromStorage || "plume");
     };
 
-    if (familierImage) {
-      const key = resolveKey();
-      familierImage.src = familierMap[key];
-      familierImage.alt = `Familier ${key}`;
-    }
+    const parseCustomisation = (customisationRaw) => {
+      if (!customisationRaw) {
+        return {};
+      }
+
+      if (typeof customisationRaw === "string") {
+        try {
+          const parsed = JSON.parse(customisationRaw);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch {
+          return {};
+        }
+      }
+
+      return typeof customisationRaw === "object" ? customisationRaw : {};
+    };
+
+    const resolveImagePath = (familierKey, customisationRaw) => {
+      const customisation = parseCustomisation(customisationRaw);
+
+      const list = familierVariants[familierKey] || familierVariants.plume;
+      const variantRaw =
+        customisation?.variantId ??
+        customisation?.selectedId ??
+        customisation?.variant;
+
+      if (variantRaw === undefined || variantRaw === null) {
+        return list[0];
+      }
+
+      const variantText = String(variantRaw);
+      const match = variantText.match(/(\d+)/);
+      const variantNumber = match ? parseInt(match[1], 10) : NaN;
+
+      if (!Number.isFinite(variantNumber) || variantNumber < 1) {
+        return list[0];
+      }
+
+      const variantIndex = variantNumber - 1;
+      return list[variantIndex] || list[0];
+    };
+
+    const loadFamilier = async () => {
+      if (!familierImage) {
+        return;
+      }
+
+      let user = pb.authStore?.model || null;
+      if (pb.authStore?.isValid && user?.id) {
+        try {
+          user = await pb.collection("users").getOne(user.id);
+        } catch (err) {
+          console.error("Erreur lors du chargement du profil:", err);
+        }
+      }
+
+      const familierKey = normalizeFamilierKey(user?.familier || resolveKey());
+      const imagePath = resolveImagePath(
+        familierKey,
+        user?.customisation ||
+          pb.authStore?.model?.customisation ||
+          localStorage.getItem("customisation"),
+      );
+
+      familierImage.src = imagePath;
+      familierImage.alt = `Familier ${familierKey}`;
+    };
+
+    loadFamilier();
 
     // Remplacer "..." par le pseudo et "(date_du_jour)" par la date
     if (headerTitle && headerTitle.textContent.includes("...")) {
