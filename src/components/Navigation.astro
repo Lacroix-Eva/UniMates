@@ -3,12 +3,20 @@ const menuItems = [
   {
     label: "Interactions",
     href: "/interactions/index.html",
-    icon: "💬",
+    iconPath: "/icons/bulle.svg",
     showBadge: true,
   },
-  { label: "Stats", href: "/stats/index.html", icon: "🦆" },
-  { label: "Ressources", href: "/ressource/index.html", icon: "😊" },
-  { label: "Profil", href: "/profile/index.html", icon: "👤" },
+  { label: "Stats", href: "/stats/index.html", iconPath: "/icons/stat.svg" },
+  {
+    label: "Ressources",
+    href: "/ressource/index.html",
+    iconPath: "/icons/Ressources.svg",
+  },
+  {
+    label: "Profil",
+    href: "/profile/index.html",
+    iconPath: "/icons/profil.svg",
+  },
 ];
 ---
 
@@ -27,7 +35,15 @@ const menuItems = [
                  text-sm text-base-content relative"
           >
             <span class="text-xl relative">
-              {item.icon}
+              {item.iconPath ? (
+                <img
+                  src={item.iconPath}
+                  alt={item.label}
+                  class="w-5 h-5 object-contain"
+                />
+              ) : (
+                item.icon
+              )}
               {item.showBadge && (
                 <span
                   id="notificationBadge"
