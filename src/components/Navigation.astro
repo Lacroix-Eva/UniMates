@@ -4,6 +4,7 @@ const menuItems = [
     label: "Interactions",
     href: "/interactions/index.html",
     iconPath: "/icons/bulle.svg",
+    iconClass: "scale-125",
     showBadge: true,
   },
   { label: "Stats", href: "/stats/index.html", iconPath: "/icons/stat.svg" },
@@ -34,15 +35,15 @@ const menuItems = [
             class="flex flex-col items-center gap-1
                  text-sm text-base-content relative"
           >
-            <span class="text-xl relative">
+            <span class="relative inline-flex items-center justify-center w-6 h-6 leading-none">
               {item.iconPath ? (
                 <img
                   src={item.iconPath}
                   alt={item.label}
-                  class="w-5 h-5 object-contain"
+                  class={`w-full h-full object-contain block ${item.iconClass || ""}`}
                 />
               ) : (
-                item.icon
+                <span class="text-xl leading-none" aria-hidden="true" />
               )}
               {item.showBadge && (
                 <span
