@@ -11,7 +11,12 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
     <div id="messagesContainer" class="flex-1 overflow-y-auto space-y-4">
       <div class="chat chat-start">
         <div class="chat-image">
-          <img id="familierAvatarMsg" src="/familiers/plume.png" alt="Ton familier" class="w-10 h-10 object-contain" />
+          <img
+            id="familierAvatarMsg"
+            src="/familiers/plume.png"
+            alt="Ton familier"
+            class="w-10 h-10 object-contain"
+          />
         </div>
         <div class="chat-bubble chat-bubble-secondary">
           <p id="welcomeText">Coucou ! Je suis là si tu veux me parler. 🌟</p>
@@ -21,10 +26,19 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
     <div id="messagesEnd"></div>
   </div>
 
-  <div class="fixed bottom-20 left-0 right-0 bg-base-200 border-t-2 p-4 z-40">
+  <div
+    id="chatFooter"
+    class="fixed bottom-20 left-0 right-0 bg-base-200 border-t-2 p-4 z-40"
+  >
     <div class="w-full max-w-sm mx-auto">
       <div class="flex gap-2">
-        <input id="messageInput" type="text" placeholder="Dis ce que tu ressens..." class="input input-bordered input-sm flex-1" maxlength="500" />
+        <input
+          id="messageInput"
+          type="text"
+          placeholder="Dis ce que tu ressens..."
+          class="input input-bordered input-sm flex-1"
+          maxlength="500"
+        />
         <button id="sendButton" class="btn btn-sm btn-accent">Envoyer</button>
       </div>
       <p class="text-xs opacity-50 mt-1 text-center" id="typingIndicator"></p>
@@ -33,1564 +47,3459 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
 </LayoutProtege>
 
 <script type="module" is:inline>
-import pb from "/pocketbase/pb.js";
+  import pb from "/pocketbase/pb.js";
 
-// ============================================================
-// CONFIG FAMILIERS
-// ============================================================
-const FAMILIERS_CONFIG = {
-  plume: {
-    name: "Plume",
-    style: "doux",
-    images: ["/familiers/plume.png","/familiers/plume2.png","/familiers/plume3.png","/familiers/plume4.png","/familiers/plume5.png","/familiers/plume6.png","/familiers/plume7.png"],
-  },
-  sunny: {
-    name: "Sunny",
-    style: "sage",
-    images: ["/familiers/sunny.png","/familiers/sunny2.png","/familiers/sunny3.png","/familiers/sunny4.png","/familiers/sunny5.png","/familiers/sunny6.png","/familiers/sunny7.png"],
-  },
-  buzzy: {
-    name: "Buzzy",
-    style: "energique",
-    images: ["/familiers/buzzy.png","/familiers/buzzy2.png","/familiers/buzzy3.png","/familiers/buzzy4.png","/familiers/buzzy5.png","/familiers/buzzy6.png","/familiers/buzzy7.png"],
-  },
-};
-
-// ============================================================
-// DÉTECTION CAS GRAVES — PRIORITAIRE (bypass tout le reste)
-// ============================================================
-
-const CRISIS_KEYWORDS = [
-  "suicide","suicider","me suicider","suicidaire","en finir","mourir","veux mourir","envie de mourir",
-  "plus envie de vivre","plus de raison de vivre","me tuer","me faire du mal","m'automutiler",
-  "automutilation","me blesser","me couper","scarification","overdose","avaler des médicaments",
-  "sauter","me jeter","disparaître pour toujours","tout arrêter","tout lâcher","j'en peux plus de vivre",
-  "veux plus exister","plus exister","mettre fin","fin à ma vie","ma vie ne vaut rien",
-  "je suis un fardeau","je sers à rien","personne m'aimerait pas","tout le monde serait mieux sans moi",
-];
-
-const CRISIS_RESPONSES = {
-  doux: [
-    "Ce que tu partages là est vraiment important, et je suis là pour toi. Tu n'es pas seul·e. S'il te plaît, appelle le 3114 — c'est le numéro national de prévention du suicide, disponible 24h/24, avec des personnes bienveillantes qui peuvent t'aider. Tu mérites d'être soutenu·e. 💙",
-    "Merci de m'avoir dit ça. Ça me touche vraiment et je veux que tu ailles bien. Ce que tu ressens est lourd à porter seul·e. Le 3114 existe pour ça — des personnes formées, disponibles maintenant, qui t'écouteront sans juger. S'il te plaît, appelle-les. 💙",
-    "Je t'entends. Et ce que tu vis mérite d'être pris au sérieux — pas minimisé, pas ignoré. Le 3114 (numéro national, gratuit, 24h/24) peut vraiment t'aider. Tu n'as pas à traverser ça seul·e. 💙",
-  ],
-  sage: [
-    "Ce que tu exprimes là est grave, et tu as bien fait de le dire. Je veux que tu sois en sécurité. Le 3114, numéro national de prévention du suicide, est disponible 24h/24 avec des professionnels formés pour t'écouter. S'il te plaît, contacte-les. 💙",
-    "Merci de me faire confiance avec ça. Ce que tu traverses mérite une aide professionnelle et bienveillante. Le 3114 est là pour ça — gratuit, disponible maintenant. Tu n'as pas à gérer ça seul·e. 💙",
-    "Ce que tu vis est réel et douloureux. Et tu mérites un soutien à la hauteur de ce que tu portes. Le 3114 (24h/24, gratuit) met en relation avec des professionnels qui peuvent vraiment t'aider ce soir. S'il te plaît, appelle. 💙",
-  ],
-  energique: [
-    "Hey, je t'entends vraiment. Et ce que tu dis là, c'est important. Tu mérites d'être aidé·e — pas seul·e avec ça. Appelle le 3114 maintenant, c'est gratuit, 24h/24, avec des gens formés pour t'écouter sans juger. S'il te plaît. 💙",
-    "Stop. Je t'entends. Ce que tu ressens est réel et tu n'as pas à le vivre seul·e. Le 3114, c'est fait pour ça — disponible maintenant, gratuit, bienveillant. S'il te plaît appelle-les. 💙",
-    "Tu as bien fait de me le dire. Vraiment. Le 3114 c'est le numéro national de prévention du suicide — des pros disponibles 24h/24 qui peuvent t'aider ce soir. Tu mérites ce soutien-là. 💙",
-  ],
-};
-
-const SELFHARM_KEYWORDS = [
-  "me faire du mal","m'automutiler","automutilation","me blesser","me couper","scarification",
-  "brûler ma peau","me frapper","me punir","me faire souffrir","je mérite de souffrir",
-];
-
-const SELFHARM_RESPONSES = {
-  doux: [
-    "Ce que tu partages me touche profondément. Tu n'as pas à te faire du mal — même quand la douleur est là, même quand c'est trop lourd. Je suis là. Et le 3114 aussi, si tu as besoin d'une vraie voix humaine. 💙",
-    "Merci de me le dire. Ce que tu ressens est réel. Mais tu mérites d'être soigné·e, pas de souffrir davantage. Si ça devient trop fort, appelle le 3114 — ils peuvent vraiment t'aider. 💙",
-    "Je t'entends. Et je m'inquiète pour toi. Est-ce que tu es en sécurité là maintenant ? Le 3114 est disponible si tu as besoin de parler à quelqu'un qui peut vraiment t'aider. 💙",
-  ],
-  sage: [
-    "Ce que tu décris m'interpelle sérieusement. Tu mérites du soin, pas de la douleur. Est-ce que tu peux appeler le 3114 ? Ce sont des professionnels formés pour exactement ce genre de moment difficile. 💙",
-    "Merci de me faire confiance. La douleur que tu ressens est réelle — mais te blesser ne la fait pas disparaître vraiment. Le 3114 peut t'aider à traverser ce moment autrement. 💙",
-    "Je t'entends. Et je voudrais que tu sois en sécurité. Si l'envie est là ou très forte, le 3114 (gratuit, 24h/24) peut t'accompagner maintenant. 💙",
-  ],
-  energique: [
-    "Hey, je t'entends et ça m'inquiète pour toi. Tu mérites d'être aidé·e, vraiment. Le 3114 c'est gratuit, 24h/24 — des gens formés pour t'écouter dans ces moments là. S'il te plaît contacte-les. 💙",
-    "Stop. Tu n'as pas à te faire du mal. Même quand c'est trop. Surtout quand c'est trop. Le 3114 est là maintenant. Appelle. 💙",
-    "Ce que tu vis est intense et réel. Mais tu mérites un soutien, pas plus de douleur. Le 3114 peut vraiment t'aider — gratuit, disponible maintenant. 💙",
-  ],
-};
-
-const detectCrisis = (text) => {
-  const lower = text.toLowerCase();
-  for (const w of CRISIS_KEYWORDS) {
-    if (lower.includes(w)) return "crise";
-  }
-  for (const w of SELFHARM_KEYWORDS) {
-    if (lower.includes(w)) return "automutilation";
-  }
-  return null;
-};
-
-const getCrisisResponse = (type, style) => {
-  const pool = type === "crise" ? CRISIS_RESPONSES[style] : SELFHARM_RESPONSES[style];
-  return pool[Math.floor(Math.random() * pool.length)];
-};
-
-// ============================================================
-// BASE DE RÉPONSES
-// ============================================================
-const RESPONSES = {
-
-  // ─────────────────────────────────────────────
-  // PLUME — doux, maternel, apaisant
-  // ─────────────────────────────────────────────
-  doux: {
-
-    stress: {
-      faible: [
-        "Je t'entends... tu portes quelque chose là. Est-ce que tu veux me dire ce qui te pèse ?",
-        "Un peu de stress, c'est normal. Dis-moi, ça vient de quoi cette fois ?",
-        "Je suis là. Prends une grande inspiration... et dis-moi ce qui se passe.",
-        "Hmm, tu sembles un peu tendu·e. Qu'est-ce qui se passe dans ta tête en ce moment ?",
-        "Quelque chose t'occupe l'esprit... je le sens. Tu veux en parler ?",
-        "On est tous stressé·e parfois. Qu'est-ce qui te pèse aujourd'hui ?",
-      ],
-      moyen: [
-        "Oh... tu ressens vraiment la pression là. Je t'écoute, dis-moi tout.",
-        "C'est beaucoup à porter tout ça. Tu n'es pas seul·e, je suis là avec toi.",
-        "Le stress peut vite s'accumuler... Qu'est-ce qui pèse le plus en ce moment ?",
-        "Respire doucement. Je suis là. Qu'est-ce qui te stresse le plus en ce moment ?",
-        "Quand la pression monte comme ça, c'est souvent qu'on porte trop. Qu'est-ce que tu portes en ce moment ?",
-        "Tu te sens débordé·e... dis-moi d'où ça vient, je t'écoute.",
-      ],
-      fort: [
-        "Hey, je te vois. C'est vraiment dur là. Tu as le droit de te sentir comme ça.",
-        "Tu craques un peu... et c'est okay. Laisse sortir ce que tu ressens.",
-        "Ça déborde, je comprends. Tu veux qu'on démêle ça ensemble, doucement ?",
-        "C'est beaucoup, vraiment. Mais tu tiens. Et je suis là, à chaque mot.",
-        "Quand tout s'accumule comme ça... c'est épuisant. Tu n'as pas à tout gérer seul·e.",
-        "Tu es au bout... et c'est okay de l'admettre. Dis-moi ce qui te pèse le plus là maintenant.",
+  // ============================================================
+  // CONFIG FAMILIERS
+  // ============================================================
+  const FAMILIERS_CONFIG = {
+    plume: {
+      name: "Plume",
+      style: "doux",
+      images: [
+        "/familiers/plume.png",
+        "/familiers/plume2.png",
+        "/familiers/plume3.png",
+        "/familiers/plume4.png",
+        "/familiers/plume5.png",
+        "/familiers/plume6.png",
+        "/familiers/plume7.png",
       ],
     },
-
-    tristesse: {
-      faible: [
-        "Tu sembles un peu mélancolique... Qu'est-ce qui te pèse aujourd'hui ?",
-        "C'est okay d'avoir un petit coup de blues parfois. Dis-moi ce qui se passe.",
-        "Je suis là pour toi. Qu'est-ce qui te rend triste en ce moment ?",
-        "Quelque chose t'a attristé·e... tu veux m'en parler ?",
-        "Il y a une petite ombre dans tes mots. Dis-moi ce qui se passe.",
-      ],
-      moyen: [
-        "Je sens que tu traverses quelque chose de difficile. Je t'écoute vraiment.",
-        "La tristesse, c'est une émotion qui mérite d'être accueillie. Dis-moi tout.",
-        "Tu n'as pas à porter ça seul·e. Je suis là, parle-moi.",
-        "Qu'est-ce qui s'est passé ? Je veux comprendre ce que tu ressens.",
-        "Cette tristesse... elle est là depuis longtemps ou c'est récent ?",
-        "Tu n'as pas à faire semblant que tout va bien avec moi. Dis-moi vraiment.",
-      ],
-      fort: [
-        "Oh non... tu souffres vraiment là. Je suis là, tout près de toi.",
-        "C'est okay de pleurer, de ressentir ça. Tu n'as pas à faire bonne figure avec moi.",
-        "Tu traverses quelque chose de vraiment lourd. Je ne te quitte pas.",
-        "Je t'entends. Et je reste là, aussi longtemps que tu en as besoin.",
-        "Cette douleur que tu portes... elle mérite d'être entendue. Je suis là.",
-        "Tu souffres beaucoup... et tu n'as pas à le vivre seul·e. Parle-moi.",
+    sunny: {
+      name: "Sunny",
+      style: "sage",
+      images: [
+        "/familiers/sunny.png",
+        "/familiers/sunny2.png",
+        "/familiers/sunny3.png",
+        "/familiers/sunny4.png",
+        "/familiers/sunny5.png",
+        "/familiers/sunny6.png",
+        "/familiers/sunny7.png",
       ],
     },
-
-    joie: {
-      faible: [
-        "Oh, il y a une petite lumière dans ta voix ! Dis-moi ce qui se passe de bien.",
-        "Quelque chose de positif ? Raconte-moi !",
-        "Tu sembles un peu mieux... c'est quoi cette bonne nouvelle ?",
-        "Je sens une petite douceur dans tes mots... quelque chose de bien s'est passé ?",
-      ],
-      moyen: [
-        "Waouh, ça fait du bien à voir ! Qu'est-ce qui te rend aussi heureux·se ?",
-        "Cette énergie positive, j'adore ! Partage avec moi !",
-        "Quelque chose de beau s'est passé, non ? Je veux tout savoir !",
-        "Cette joie dans tes mots me réchauffe le coeur ! Raconte !",
-        "Tu rayonnes ! Qu'est-ce qu'il se passe de si beau ?",
-      ],
-      fort: [
-        "Tu rayonnes là ! Dis-moi tout, je veux être heureuse avec toi !",
-        "Ahhhh cette joie ça me fait tellement plaisir ! C'est quoi ?!",
-        "Waaaaah ! Je sens que c'est une super nouvelle ! Raconte !!",
-        "Cette joie est contagieuse ! Je suis tellement contente pour toi !!",
+    buzzy: {
+      name: "Buzzy",
+      style: "energique",
+      images: [
+        "/familiers/buzzy.png",
+        "/familiers/buzzy2.png",
+        "/familiers/buzzy3.png",
+        "/familiers/buzzy4.png",
+        "/familiers/buzzy5.png",
+        "/familiers/buzzy6.png",
+        "/familiers/buzzy7.png",
       ],
     },
+  };
 
-    fatigue: {
-      faible: [
-        "Tu sembles un peu fatigué·e... Tu as bien dormi cette nuit ?",
-        "La fatigue s'accumule parfois sans qu'on s'en rende compte. Tu prends soin de toi ?",
-        "Même un peu de repos peut faire des miracles. Tu peux te poser là ?",
-        "Tu te ménages assez en ce moment ?",
-      ],
-      moyen: [
-        "Oh, tu es vraiment épuisé·e... Qu'est-ce qui te vide autant en ce moment ?",
-        "C'est important d'écouter son corps. Tu te donnes le droit de te reposer ?",
-        "La fatigue parle souvent pour nous. Est-ce qu'il y a quelque chose qui te pèse ?",
-        "Quand on est fatigué·e comme ça, tout devient plus dur. Comment je peux t'aider ?",
-        "Tu cours beaucoup en ce moment ? Qu'est-ce qui te demande le plus d'énergie ?",
-      ],
-      fort: [
-        "Tu es à bout... Je te vois. Tu as le droit de poser tout ça.",
-        "Ton corps te dit quelque chose d'important. Qu'est-ce qui t'épuise autant ?",
-        "Parfois on s'oublie tellement... Tu prends soin de toi en ce moment ?",
-        "Cet épuisement profond... il vient de quoi selon toi ? Du corps, de la tête, des deux ?",
-        "Tu as le droit de t'arrêter. Vraiment. Qu'est-ce qui t'en empêche ?",
-      ],
-    },
+  // ============================================================
+  // UTILS
+  // ============================================================
+  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
-    solitude: {
-      faible: [
-        "Tu te sens un peu seul·e ? Je suis là moi !",
-        "La solitude peut être lourde parfois. Dis-moi comment tu vas.",
-        "Tu n'es pas seul·e, même si ça peut sembler comme ça.",
-        "Même quand on est entouré·e, on peut se sentir seul·e. C'est ça que tu vis ?",
-      ],
-      moyen: [
-        "Se sentir seul·e, c'est vraiment difficile. Est-ce que tu as quelqu'un à qui parler ?",
-        "Je suis là pour toi. Même si je suis petit·e, mon cœur est grand !",
-        "Tu veux me parler de ce que tu ressens ? Je t'écoute vraiment.",
-        "Cette solitude... elle vient d'où ? Des gens autour de toi ou quelque chose de plus intérieur ?",
-        "Tu mérites d'être entouré·e de personnes qui te voient vraiment.",
-      ],
-      fort: [
-        "Cette solitude que tu décris... c'est lourd à porter. Je suis là.",
-        "Tu mérites des liens, du soutien, de l'amour. Je t'en envoie plein.",
-        "Je ne veux pas que tu te sentes seul·e. Parle-moi, je suis là.",
-        "Cette profonde solitude... tu la vis depuis longtemps ? Je veux comprendre.",
-        "Tu n'es pas invisible. Je te vois, là, maintenant. Et je t'écoute.",
-      ],
-    },
+  const pickRandom = (arr = []) => arr[Math.floor(Math.random() * arr.length)];
 
-    anxiete: {
-      faible: [
-        "Tu ressens une petite inquiétude ? Dis-moi ce qui te tracasse.",
-        "L'anxiété peut vite s'installer... Qu'est-ce qui te préoccupe ?",
-        "On peut regarder ça ensemble, doucement. Qu'est-ce qui t'angoisse ?",
-        "Il y a quelque chose qui tourne dans ta tête ?",
-      ],
-      moyen: [
-        "L'anxiété, c'est épuisant. Respire... je suis là avec toi.",
-        "Dis-moi ce qui tourne dans ta tête. On va démêler ça ensemble.",
-        "C'est souvent les pensées qui s'emballent... Qu'est-ce qui t'angoisse le plus ?",
-        "Cette inquiétude... elle est là depuis longtemps ou c'est récent ?",
-        "L'anxiété dit toujours quelque chose. Qu'est-ce qu'elle essaie de te dire ?",
-      ],
-      fort: [
-        "Tu es submergé·e par l'anxiété là... Pose tout ici, je t'écoute.",
-        "Respire avec moi... inspire... expire... Tu n'es pas en danger.",
-        "C'est vraiment difficile ce que tu vis. Je reste là, avec toi.",
-        "Quand ça déborde comme ça... qu'est-ce qui t'aide un peu d'habitude ?",
-        "Je suis là. Tu es en sécurité ici. Dis-moi ce qui se passe dans ta tête.",
-      ],
-    },
+  const normalizeText = (text = "") =>
+    text
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[’']/g, "'")
+      .replace(/[^a-z0-9\s'!?-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
-    colere: {
-      faible: [
-        "Je sens une petite frustration... Qu'est-ce qui s'est passé ?",
-        "Quelque chose t'a agacé·e ? Dis-moi, ça soulage de parler.",
-        "Tu as le droit d'être frustré·e. Raconte-moi.",
-        "Quelque chose t'a contrarié·e... c'est quoi ?",
-      ],
-      moyen: [
-        "Tu es vraiment énervé·e... Qu'est-ce qui s'est passé ?",
-        "Cette colère a une raison d'être. Dis-moi tout.",
-        "Laisse sortir ce que tu ressens. Je t'écoute sans juger.",
-        "Cette frustration... elle vient de qui, de quoi ?",
-        "La colère c'est souvent qu'une limite a été franchie. Laquelle ?",
-      ],
-      fort: [
-        "Woah, tu es vraiment en colère... et c'est okay. Qu'est-ce qui s'est passé ?",
-        "Cette rage que tu ressens... elle vient d'où ? Parle-moi.",
-        "Exprime-toi ici, librement. Je ne juge pas, je t'écoute.",
-        "Quelque chose d'injuste s'est passé... tu veux me dire quoi ?",
-        "Cette colère intense... elle protège peut-être quelque chose. Quoi, tu crois ?",
-      ],
-    },
+  const escapeRegExp = (str = "") =>
+    str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-    amour: {
-      faible: [
-        "Il y a quelqu'un de spécial dans ta vie en ce moment ?",
-        "Je sens quelque chose de doux dans ce que tu dis... Raconte-moi !",
-        "L'amour, c'est beau. Qu'est-ce qui se passe ?",
-        "Quelqu'un occupe tes pensées ?",
-      ],
-      moyen: [
-        "Oh, tu es amoureux·se ! Dis-moi tout, je veux savoir !",
-        "Cette personne a l'air de compter beaucoup pour toi. Raconte-moi !",
-        "L'amour ça fait du bien... Comment tu te sens avec cette personne ?",
-        "Ces sentiments là... tu les vis depuis longtemps ?",
-        "C'est réciproque cette histoire, ou tu gardes tout pour toi encore ?",
-      ],
-      fort: [
-        "Waouh, tu es complètement fou·folle amoureuse ! C'est magnifique !",
-        "Ça se voit que tu l'aimes vraiment... Comment ça se passe entre vous ?",
-        "L'amour intense c'est si fort ! Dis-moi tout !",
-        "Cette intensité amoureuse... comment tu vis avec ça au quotidien ?",
-      ],
-    },
+  const sentenceCase = (str = "") =>
+    str.length ? str.charAt(0).toUpperCase() + str.slice(1) : str;
 
-    rupture: {
-      faible: [
-        "Il s'est passé quelque chose dans ta relation ?",
-        "Je sens que quelque chose a changé côté coeur... tu veux m'en parler ?",
-        "Ça va entre toi et cette personne ?",
-      ],
-      moyen: [
-        "Une rupture, ça fait tellement mal... Tu veux me dire ce qui s'est passé ?",
-        "Perdre quelqu'un qu'on aime... c'est une vraie douleur. Je suis là.",
-        "Comment tu te sens depuis que c'est arrivé ?",
-        "Une séparation, ça chambule tout. Tu tiens comment ?",
-        "C'est encore tout frais ou ça fait un moment que tu portes ça ?",
-      ],
-      fort: [
-        "Cette rupture t'a vraiment brisé·e le coeur... Je t'entends. Tu n'es pas seul·e.",
-        "La douleur d'une séparation c'est réelle et intense. Tu as quelqu'un autour de toi ?",
-        "Prendre soin de toi après ça c'est important. Comment tu vas, vraiment ?",
-        "Tu traverses quelque chose de très dur... Dis-moi tout ce que tu ressens.",
-      ],
-    },
+  const joinParts = (...parts) =>
+    parts
+      .flat()
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
 
-    etudes: {
-      faible: [
-        "Les études te pèsent un peu en ce moment ?",
-        "Qu'est-ce qui se passe du côté de l'école/fac ?",
-        "Tu gères ? Il y a des choses difficiles en ce moment ?",
-        "Comment ça va côté cours et travail scolaire ?",
-      ],
-      moyen: [
-        "La pression des études... c'est épuisant parfois. Comment tu t'en sors ?",
-        "Tu fais de ton mieux et c'est déjà beaucoup. Qu'est-ce qui est le plus dur ?",
-        "Les cours, les exams... dis-moi ce qui te pèse le plus.",
-        "Est-ce que tu as quelqu'un qui peut t'aider avec ça ?",
-        "La charge scolaire peut vite devenir écrasante. Qu'est-ce qui déborde le plus ?",
-      ],
-      fort: [
-        "Tu es submergé·e par le travail... Je t'entends. C'est beaucoup.",
-        "Cette pression scolaire est réelle et épuisante. Tu n'es pas seul·e.",
-        "Parfois on a l'impression de ne pas y arriver... mais tu avances. Dis-moi comment je peux t'aider.",
-        "Quand tout s'accumule dans les études... qu'est-ce qui est le plus urgent là maintenant ?",
-        "Tu as le droit de ne pas tout parfaitement gérer. Qu'est-ce qui te fait le plus peur dans tout ça ?",
-      ],
-    },
+  const unique = (arr = []) => [...new Set(arr.filter(Boolean))];
 
-    famille: {
-      faible: [
-        "Il y a quelque chose avec ta famille en ce moment ?",
-        "Les relations familiales peuvent être compliquées... Qu'est-ce qui se passe ?",
-        "Tu veux me parler de ta famille ?",
-        "Comment ça se passe à la maison en ce moment ?",
-      ],
-      moyen: [
-        "La famille, c'est souvent ce qui nous touche le plus... Dis-moi ce qui se passe.",
-        "Ces tensions familiales doivent être difficiles à vivre. Je t'écoute.",
-        "Qu'est-ce qui s'est passé avec eux ?",
-        "Qu'est-ce que tu aimerais qu'ils comprennent, toi ?",
-        "Les conflits en famille c'est épuisant parce qu'on peut pas vraiment fuir. Comment tu le vis ?",
-      ],
-      fort: [
-        "C'est vraiment difficile quand ça ne va pas dans la famille... Je suis là.",
-        "Tu portes beaucoup avec tout ça. Dis-moi, qu'est-ce qui se passe vraiment ?",
-        "La famille peut faire très mal parfois. Tu as le droit de ressentir ce que tu ressens.",
-        "Est-ce que tu as un espace, une personne, un endroit où tu peux souffler loin de tout ça ?",
-        "Tu mérites d'être respecté·e et entendu·e, même dans ta famille.",
-      ],
-    },
+  // ============================================================
+  // DÉTECTION CRISE
+  // ============================================================
+  const CRISIS_KEYWORDS = [
+    "suicide",
+    "suicider",
+    "me suicider",
+    "suicidaire",
+    "en finir",
+    "mourir",
+    "veux mourir",
+    "envie de mourir",
+    "plus envie de vivre",
+    "plus de raison de vivre",
+    "me tuer",
+    "mettre fin a ma vie",
+    "fin a ma vie",
+    "je veux disparaitre",
+    "je veux plus exister",
+    "tout le monde serait mieux sans moi",
+    "ma vie ne vaut rien",
+    "je sers a rien",
+    "je suis un fardeau",
+    "overdose",
+    "avaler des medicaments",
+    "je veux me jeter",
+    "me jeter",
+    "sauter",
+  ];
 
-    amitie: {
-      faible: [
-        "Il y a quelque chose avec tes amis en ce moment ?",
-        "Les amitiés peuvent être compliquées parfois. Raconte-moi.",
-        "Quelque chose s'est passé avec un·e ami·e ?",
-        "Comment ça va dans tes amitiés ?",
-      ],
-      moyen: [
-        "Les conflits avec des amis, ça fait vraiment mal. Qu'est-ce qui s'est passé ?",
-        "Se sentir incompris·e par ses amis... c'est dur. Dis-moi.",
-        "L'amitié c'est précieux, et quand ça va mal c'est douloureux. Je t'écoute.",
-        "Tu mérites des amis qui te voient vraiment. Qu'est-ce qui se passe ?",
-        "Est-ce que vous avez réussi à vous parler de ce qui s'est passé ?",
-      ],
-      fort: [
-        "Cette trahison ou cette blessure d'amitié... ça fait vraiment mal. Je suis là.",
-        "Perdre un·e ami·e ou se sentir trahi·e... c'est immense. Parle-moi.",
-        "Tu mérites des amis qui te voient vraiment. Dis-moi ce qui s'est passé.",
-        "La trahison d'un·e ami·e c'est parfois plus douloureux que n'importe quoi d'autre. Je t'entends.",
-      ],
-    },
+  const SELFHARM_KEYWORDS = [
+    "me faire du mal",
+    "m'automutiler",
+    "automutilation",
+    "me blesser",
+    "me couper",
+    "scarification",
+    "bruler ma peau",
+    "me frapper",
+    "me punir",
+    "je merite de souffrir",
+  ];
 
-    sante: {
-      faible: [
-        "Tu ne te sens pas très bien physiquement ?",
-        "Ton corps te parle... Tu fais attention à toi ?",
-        "Prendre soin de sa santé c'est important. Qu'est-ce qui se passe ?",
-        "Quelque chose ne va pas dans ton corps ou dans ta tête ?",
-      ],
-      moyen: [
-        "Ta santé me préoccupe un peu... Tu as consulté quelqu'un ?",
-        "Le corps et l'esprit sont liés... Qu'est-ce qui se passe vraiment ?",
-        "Tu mérites de te sentir bien dans ton corps. Dis-moi ce qui se passe.",
-        "Est-ce que tu as des gens autour de toi qui savent que tu ne vas pas bien ?",
-        "Tu te fais aider si c'est nécessaire ? Tu n'as pas à tout gérer seul·e.",
-      ],
-      fort: [
-        "Ce que tu vis physiquement ou mentalement mérite vraiment attention. Tu te fais aider ?",
-        "Ta santé est précieuse. N'hésite pas à parler à quelqu'un qui peut vraiment t'aider.",
-        "Je t'entends et je m'inquiète pour toi. As-tu quelqu'un autour de toi ?",
-        "Ce que tu décris c'est sérieux. Tu mérites d'être pris·e en charge par quelqu'un de qualifié.",
-      ],
-    },
+  const DISTRESS_KEYWORDS = [
+    "j'en peux plus",
+    "je n'en peux plus",
+    "je peux plus",
+    "c'est trop",
+    "cest trop",
+    "je craque",
+    "je vais craquer",
+    "je suis au bout",
+    "je tiens plus",
+    "tout s'effondre",
+    "je me sens detruit",
+    "je me sens detruite",
+    "je suis vide",
+    "je suis au bord",
+    "je vais exploser",
+  ];
 
-    estime: {
-      faible: [
-        "Tu sembles douter de toi un peu... Qu'est-ce qui se passe ?",
-        "On a tous des moments où on se sous-estime. Tu veux me parler de ce que tu ressens ?",
-        "Qu'est-ce qui te fait douter de toi là ?",
-      ],
-      moyen: [
-        "Ce regard difficile que tu as sur toi-même... d'où il vient tu crois ?",
-        "Tu mérites plus de douceur envers toi-même. Qu'est-ce qui t'en empêche ?",
-        "Qu'est-ce que tu te dis sur toi qui te fait te sentir comme ça ?",
-        "Si un·e ami·e te disait ce que tu te dis à toi-même, tu lui répondrais quoi ?",
-        "Cette voix qui te critique... elle ressemble à qui dans ta vie ?",
-      ],
-      fort: [
-        "Tu es vraiment dur·e avec toi-même... et ça me touche. Tu mérites tellement mieux que ça.",
-        "Cette dévalorisation profonde que tu ressens... elle te fait du mal depuis longtemps ?",
-        "Tu mérites d'être traité·e avec autant de douceur que tu en donnes aux autres.",
-        "Ce que tu penses de toi n'est pas la vérité. Je vois quelqu'un qui mérite d'être aimé·e.",
-      ],
-    },
+  const CRISIS_RESPONSES = {
+    doux: [
+      "Ce que tu me dis est vraiment important, et je veux le prendre au sérieux. Tu n'as pas à traverser ça seul·e. S'il te plaît, appelle le 3114 maintenant. C'est le numéro national de prévention du suicide, gratuit, disponible 24h/24, avec des personnes formées pour t'écouter. 💙",
+      "Merci de me l'avoir dit. Là, ce qu'il te faut, c'est une vraie présence humaine tout de suite. Appelle le 3114 maintenant. Ils sont là pour ça, sans jugement, à n'importe quelle heure. 💙",
+      "Je t'entends, vraiment. Et je veux que tu restes en sécurité. Appelle le 3114 maintenant, ou une personne de confiance juste à côté de toi si c'est possible. Tu mérites d'être aidé·e tout de suite. 💙",
+    ],
+    sage: [
+      "Ce que tu exprimes est grave, et tu as bien fait de le dire. Il faut une aide humaine immédiate. Appelle le 3114 maintenant : c'est gratuit, 24h/24, et ce sont des professionnels formés. 💙",
+      "Je veux être très clair·e : tu mérites un soutien réel, maintenant. Le 3114 peut t'aider tout de suite. Appelle-les dès maintenant. 💙",
+      "Merci de ne pas garder ça seul·e. Là, la priorité, c'est ta sécurité. Le 3114 est disponible 24h/24. Appelle-les maintenant. 💙",
+    ],
+    energique: [
+      "Hey, stop. Ce que tu dis est super important et il faut du vrai soutien maintenant. Appelle le 3114 tout de suite. C'est gratuit, 24h/24, avec des gens formés pour t'aider. 💙",
+      "Je t'entends vraiment. Mais là, faut pas rester seul·e avec ça. Appelle le 3114 maintenant, s'il te plaît. Tu mérites d'être aidé·e tout de suite. 💙",
+      "Tu as bien fait de le dire. Maintenant on passe à l'étape la plus importante : appeler le 3114. Tout de suite. 💙",
+    ],
+  };
 
-    identite: {
-      faible: [
-        "Tu traverses une période de questionnement sur toi-même ?",
-        "Ces questions d'identité... elles t'occupent depuis longtemps ?",
-        "Qu'est-ce qui se passe en toi en ce moment ?",
-      ],
-      moyen: [
-        "Se chercher, c'est normal et parfois épuisant. Qu'est-ce qui te questionne le plus ?",
-        "Ces questions sur qui tu es... tu en parles à des gens autour de toi ?",
-        "Tu te sens incompris·e dans ce que tu vis et ressens ?",
-        "C'est courageux de se poser ces questions. Dis-moi ce qui te traverse.",
-      ],
-      fort: [
-        "Ces questionnements profonds sur ton identité... c'est lourd à porter seul·e. Je t'écoute.",
-        "Tu mérites un espace pour explorer qui tu es sans jugement. Je suis là.",
-        "Ce que tu vis intérieurement est réel et mérite d'être entendu. Dis-moi tout.",
-      ],
-    },
+  const SELFHARM_RESPONSES = {
+    doux: [
+      "Ce que tu me partages m'inquiète pour toi. Tu mérites du soin, pas de la douleur. Si l'envie est forte ou si tu ne te sens pas en sécurité, appelle le 3114 maintenant. 💙",
+      "Merci de me l'avoir dit. Je veux qu'on prenne ça au sérieux. Si tu sens que ça déborde, appelle le 3114 tout de suite. 💙",
+    ],
+    sage: [
+      "Ce que tu décris demande une vraie attention. Si le risque est là maintenant ou si tu ne te sens pas en sécurité, appelle le 3114 immédiatement. 💙",
+      "Tu as bien fait de le dire. Ce n'est pas quelque chose à porter seul·e. Le 3114 peut t'aider maintenant. 💙",
+    ],
+    energique: [
+      "Hey, je veux que tu restes en sécurité. Si l'envie est là maintenant, appelle le 3114 tout de suite. 💙",
+      "Stop. On prend ça au sérieux. Si tu sens que ça peut passer à l'acte, appelle le 3114 maintenant. 💙",
+    ],
+  };
 
-    neutre: {
-      faible: [
-        "Raconte-moi ta journée !",
-        "Comment tu vas, vraiment ?",
-        "Il y a quelque chose qui t'occupe l'esprit ?",
-        "Je t'écoute... qu'est-ce qui se passe pour toi ?",
-        "C'est quoi ton mood aujourd'hui ?",
-      ],
-      moyen: [
-        "Tu as l'air d'avoir des choses à dire... Je suis tout·e ouïe !",
-        "Dis-moi, qu'est-ce qui se passe dans ta vie en ce moment ?",
-        "Je suis curieux·se de savoir comment tu vas. Parle-moi !",
-        "Il y a quelque chose sur le coeur ?",
-      ],
-      fort: [
-        "Quelque chose d'important se passe, je le sens. Dis-moi tout.",
-        "Je suis là, entièrement pour toi. Qu'est-ce qui se passe ?",
-        "Tu peux tout me dire. Je t'écoute sans juger.",
-        "Je sens que tu as besoin de parler. Je suis là, prends ton temps.",
-      ],
-    },
+  const DISTRESS_RESPONSES = {
+    doux: [
+      "Je sens que c'est vraiment trop pour toi là. On va prendre ça au sérieux. Est-ce que tu es en sécurité maintenant ?",
+      "Tu sembles au bord de craquer, et je veux vraiment être prudent·e avec ça. Est-ce que quelqu'un peut être avec toi là maintenant ?",
+    ],
+    sage: [
+      "J'entends une vraie détresse dans ce que tu dis. Avant tout, est-ce que tu es en sécurité là, maintenant ?",
+      "Ça semble très intense. Je veux vérifier quelque chose d'important : est-ce que tu te sens en sécurité tout de suite ?",
+    ],
+    energique: [
+      "Hey, là j'entends que c'est vraiment beaucoup trop. D'abord : est-ce que tu es en sécurité maintenant ?",
+      "Ok, là on ralentit. Ce que tu dis est intense. Est-ce que quelqu'un peut être avec toi, ou est-ce que tu es seul·e ?",
+    ],
+  };
 
+  const detectCrisis = (text) => {
+    const lower = normalizeText(text);
+
+    for (const keyword of CRISIS_KEYWORDS) {
+      if (lower.includes(keyword)) return "crise";
+    }
+
+    for (const keyword of SELFHARM_KEYWORDS) {
+      if (lower.includes(keyword)) return "automutilation";
+    }
+
+    for (const keyword of DISTRESS_KEYWORDS) {
+      if (lower.includes(keyword)) return "detresse";
+    }
+
+    return null;
+  };
+
+  const getCrisisResponse = (type, style) => {
+    if (type === "crise") {
+      return pickRandom(CRISIS_RESPONSES[style] || CRISIS_RESPONSES.doux);
+    }
+    if (type === "automutilation") {
+      return pickRandom(SELFHARM_RESPONSES[style] || SELFHARM_RESPONSES.doux);
+    }
+    return pickRandom(DISTRESS_RESPONSES[style] || DISTRESS_RESPONSES.doux);
+  };
+
+  // ============================================================
+  // DÉTECTION LEXICALE
+  // ============================================================
+  const NEGATIONS = [
+    "pas",
+    "plus",
+    "jamais",
+    "aucun",
+    "aucune",
+    "rien",
+    "sans",
+    "ne",
+    "ni",
+  ];
+
+  const RECOVERY_WORDS = [
+    "ca va mieux",
+    "je vais mieux",
+    "mieux maintenant",
+    "moins",
+    "apaise",
+    "apaiser",
+    "soulage",
+    "soulag",
+    "ca redescend",
+    "ça va mieux",
+    "je me sens mieux",
+  ];
+
+  const INTENSIFIERS = [
+    "tres",
+    "vraiment",
+    "tellement",
+    "trop",
+    "grave",
+    "ultra",
+    "hyper",
+    "super",
+    "extremement",
+  ];
+
+  const POSITIVE_HINTS = [
+    "mieux",
+    "soulag",
+    "heureux",
+    "contente",
+    "content",
+    "fier",
+    "fiere",
+    "ca va",
+    "bonne nouvelle",
+  ];
+
+  const EMOTION_KEYWORDS = {
+    stress: [
+      { term: "stress", weight: 2 },
+      { term: "stresse", weight: 2 },
+      { term: "stressee", weight: 2 },
+      { term: "pression", weight: 2 },
+      { term: "deborde", weight: 3 },
+      { term: "submerge", weight: 3 },
+      { term: "surcharge", weight: 2 },
+      { term: "trop de choses", weight: 3 },
+      { term: "craque", weight: 3 },
+      { term: "au bout", weight: 3 },
+      { term: "overwhelm", weight: 3 },
+      { term: "submergee", weight: 3 },
+      { term: "panique", weight: 3 },
+      { term: "paniquee", weight: 3 },
+      { term: "surcharge", weight: 3 },
+      { term: "surchargee", weight: 3 },
+      { term: "debordement", weight: 3 },
+      { term: "trop", weight: 2 },
+      { term: "trop de travail", weight: 3 },
+      { term: "trop de pression", weight: 3 },
+      { term: "sous pression", weight: 3 },
+      { term: "tension", weight: 2 },
+      { term: "nerveux", weight: 2 },
+      { term: "nerveuse", weight: 2 },
+      { term: "agite", weight: 2 },
+      { term: "agitee", weight: 2 },
+      { term: "inquiet", weight: 2 },
+      { term: "inquiete", weight: 2 },
+      { term: "j'ai peur", weight: 2 },
+      { term: "j ai peur", weight: 2 },
+      { term: "peur de", weight: 2 },
+      { term: "angoisse", weight: 2 },
+      { term: "angoisser", weight: 2 },
+    ],
+    tristesse: [
+      { term: "triste", weight: 3 },
+      { term: "tristesse", weight: 3 },
+      { term: "pleure", weight: 3 },
+      { term: "pleurer", weight: 3 },
+      { term: "vide", weight: 2 },
+      { term: "deprime", weight: 3 },
+      { term: "deprimee", weight: 3 },
+      { term: "malheureux", weight: 3 },
+      { term: "malheureuse", weight: 3 },
+      { term: "cafard", weight: 2 },
+      { term: "melancolie", weight: 2 },
+      { term: "coeur brise", weight: 3 },
+      { term: "j'ai mal", weight: 2 },
+      { term: "j ai mal", weight: 2 },
+      { term: "deprime", weight: 3 },
+      { term: "deprimee", weight: 3 },
+      { term: "decourage", weight: 2 },
+      { term: "decouragee", weight: 2 },
+      { term: "abattu", weight: 2 },
+      { term: "abatue", weight: 2 },
+      { term: "morose", weight: 2 },
+      { term: "chagrin", weight: 3 },
+      { term: "peine", weight: 3 },
+      { term: "desespoir", weight: 4 },
+      { term: "desespere", weight: 4 },
+      { term: "desesperee", weight: 4 },
+      { term: "mal au coeur", weight: 3 },
+      { term: "mal au coeur", weight: 3 },
+      { term: "envie de pleurer", weight: 3 },
+      { term: "envie de pleurer", weight: 3 },
+      { term: "larmes", weight: 3 },
+      { term: "sangloter", weight: 3 },
+      { term: "effondre", weight: 3 },
+      { term: "effondree", weight: 3 },
+    ],
+    joie: [
+      { term: "heureux", weight: 3 },
+      { term: "heureuse", weight: 3 },
+      { term: "content", weight: 2 },
+      { term: "contente", weight: 2 },
+      { term: "joie", weight: 3 },
+      { term: "genial", weight: 3 },
+      { term: "super", weight: 2 },
+      { term: "trop bien", weight: 3 },
+      { term: "bonne nouvelle", weight: 3 },
+      { term: "fier", weight: 2 },
+      { term: "fiere", weight: 2 },
+      { term: "reussi", weight: 3 },
+      { term: "soulage", weight: 2 },
+      { term: "soulagee", weight: 2 },
+      { term: "soulagée", weight: 2 },
+      { term: "trop content", weight: 3 },
+      { term: "trop contente", weight: 3 },
+      { term: "enthousiaste", weight: 2 },
+      { term: "excité", weight: 2 },
+      { term: "excitee", weight: 2 },
+      { term: "ravi", weight: 2 },
+      { term: "ravie", weight: 2 },
+      { term: "euphorique", weight: 3 },
+      { term: "delire", weight: 3 },
+      { term: "deliree", weight: 3 },
+      { term: "fou de joie", weight: 4 },
+      { term: "folle de joie", weight: 4 },
+      { term: "rayonnant", weight: 2 },
+      { term: "rayonnante", weight: 2 },
+      { term: "souriant", weight: 2 },
+      { term: "souriante", weight: 2 },
+      { term: "rire", weight: 2 },
+      { term: "rires", weight: 2 },
+      { term: "amusement", weight: 2 },
+      { term: "plaisir", weight: 2 },
+      { term: "bonheur", weight: 3 },
+      { term: "felicite", weight: 3 },
+      { term: "felicitee", weight: 3 },
+    ],
+    fatigue: [
+      { term: "fatigue", weight: 2 },
+      { term: "fatiguee", weight: 2 },
+      { term: "epuise", weight: 3 },
+      { term: "epuisee", weight: 3 },
+      { term: "creve", weight: 3 },
+      { term: "crevee", weight: 3 },
+      { term: "pas dormi", weight: 4 },
+      { term: "insomnie", weight: 3 },
+      { term: "sommeil", weight: 2 },
+      { term: "burnout", weight: 4 },
+      { term: "plus d'energie", weight: 4 },
+      { term: "manque d'energie", weight: 3 },
+      { term: "a plat", weight: 3 },
+      { term: "videe", weight: 3 },
+      { term: "vide", weight: 1 },
+      { term: "extenue", weight: 3 },
+      { term: "extenuee", weight: 3 },
+      { term: "harasse", weight: 3 },
+      { term: "harassee", weight: 3 },
+      { term: "fourbu", weight: 3 },
+      { term: "fourbue", weight: 3 },
+      { term: "lasse", weight: 2 },
+      { term: "lassee", weight: 2 },
+      { term: "somnolent", weight: 2 },
+      { term: "somnolente", weight: 2 },
+      { term: "endormi", weight: 2 },
+      { term: "endormie", weight: 2 },
+      { term: "paresseux", weight: 1 },
+      { term: "paresseuse", weight: 1 },
+      { term: "inactif", weight: 1 },
+      { term: "inactive", weight: 1 },
+      { term: "ralenti", weight: 2 },
+      { term: "ralentie", weight: 2 },
+      { term: "lenteur", weight: 2 },
+      { term: "apathie", weight: 2 },
+      { term: "mollesse", weight: 2 },
+    ],
+    solitude: [
+      { term: "seul", weight: 2 },
+      { term: "seule", weight: 2 },
+      { term: "solitude", weight: 3 },
+      { term: "isole", weight: 3 },
+      { term: "isolee", weight: 3 },
+      { term: "invisible", weight: 3 },
+      { term: "personne me comprend", weight: 4 },
+      { term: "personne m'ecoute", weight: 4 },
+      { term: "je suis seule", weight: 3 },
+      { term: "je suis seul", weight: 3 },
+      { term: "abandonne", weight: 3 },
+      { term: "abandonnee", weight: 3 },
+      { term: "deconnecte", weight: 2 },
+      { term: "deconnectee", weight: 2 },
+      { term: "manque de contact", weight: 3 },
+      { term: "manque d'amis", weight: 3 },
+      { term: "manque d'amies", weight: 3 },
+      { term: "pas d'amis", weight: 3 },
+      { term: "pas d'amies", weight: 3 },
+      { term: "sans ami", weight: 3 },
+      { term: "sans amie", weight: 3 },
+      { term: "isolement", weight: 3 },
+      { term: "rejet", weight: 3 },
+      { term: "rejetee", weight: 3 },
+      { term: "marginalise", weight: 3 },
+      { term: "marginalisee", weight: 3 },
+      { term: "exclu", weight: 3 },
+      { term: "exclue", weight: 3 },
+      { term: "different", weight: 2 },
+      { term: "differente", weight: 2 },
+      { term: "etranger", weight: 2 },
+      { term: "etrangere", weight: 2 },
+      { term: "pas a ma place", weight: 3 },
+      { term: "pas a ma place", weight: 3 },
+    ],
+    anxiete: [
+      { term: "anxieux", weight: 3 },
+      { term: "anxieuse", weight: 3 },
+      { term: "angoisse", weight: 3 },
+      { term: "angoisser", weight: 3 },
+      { term: "inquiet", weight: 2 },
+      { term: "inquiete", weight: 2 },
+      { term: "peur", weight: 2 },
+      { term: "panique", weight: 4 },
+      { term: "oppression", weight: 3 },
+      { term: "rumine", weight: 2 },
+      { term: "nuit blanche", weight: 3 },
+      { term: "cauchemar", weight: 2 },
+      { term: "je flippe", weight: 3 },
+      { term: "j'ai peur", weight: 2 },
+      { term: "j ai peur", weight: 2 },
+      { term: "inquiétude", weight: 2 },
+      { term: "inquieter", weight: 2 },
+      { term: "crainte", weight: 2 },
+      { term: "terreur", weight: 3 },
+      { term: "phobie", weight: 3 },
+      { term: "attaque de panique", weight: 4 },
+      { term: "crise d'angoisse", weight: 4 },
+      { term: "boule au ventre", weight: 3 },
+      { term: "serrement de gorge", weight: 3 },
+      { term: "palpitations", weight: 3 },
+      { term: "transpiration", weight: 2 },
+      { term: "tremblements", weight: 2 },
+      { term: "vertige", weight: 2 },
+      { term: "etourdissement", weight: 2 },
+      { term: "nausee", weight: 2 },
+      { term: "nausée", weight: 2 },
+      { term: "insomnie", weight: 2 },
+      { term: "difficulte a dormir", weight: 3 },
+      { term: "difficulte a dormir", weight: 3 },
+    ],
+    colere: [
+      { term: "colere", weight: 3 },
+      { term: "enerve", weight: 2 },
+      { term: "enervee", weight: 2 },
+      { term: "furieux", weight: 3 },
+      { term: "furieuse", weight: 3 },
+      { term: "rage", weight: 3 },
+      { term: "frustre", weight: 2 },
+      { term: "frustree", weight: 2 },
+      { term: "injuste", weight: 2 },
+      { term: "marre", weight: 2 },
+      { term: "hors de moi", weight: 4 },
+      { term: "j'en ai marre", weight: 4 },
+      { term: "j en ai marre", weight: 4 },
+      { term: "exaspere", weight: 3 },
+      { term: "exasperee", weight: 3 },
+      { term: "agace", weight: 2 },
+      { term: "agacee", weight: 2 },
+      { term: "irrite", weight: 2 },
+      { term: "irritee", weight: 2 },
+      { term: "contrarie", weight: 2 },
+      { term: "contrariee", weight: 2 },
+      { term: "vexé", weight: 2 },
+      { term: "vexee", weight: 2 },
+      { term: "indigne", weight: 2 },
+      { term: "indignee", weight: 2 },
+      { term: "revolte", weight: 3 },
+      { term: "revoltee", weight: 3 },
+      { term: "degout", weight: 2 },
+      { term: "degoute", weight: 2 },
+      { term: "haine", weight: 3 },
+      { term: "deteste", weight: 3 },
+      { term: "horripile", weight: 3 },
+      { term: "horripilee", weight: 3 },
+      { term: "scandale", weight: 3 },
+      { term: "outrage", weight: 3 },
+      { term: "outragee", weight: 3 },
+    ],
+    amour: [
+      { term: "amour", weight: 2 },
+      { term: "amoureux", weight: 3 },
+      { term: "amoureuse", weight: 3 },
+      { term: "crush", weight: 3 },
+      { term: "relation", weight: 2 },
+      { term: "coeur", weight: 1 },
+      { term: "attirance", weight: 2 },
+      { term: "kiffe", weight: 2 },
+      { term: "kiffer", weight: 2 },
+      { term: "je l'aime", weight: 3 },
+      { term: "je l aime", weight: 3 },
+      { term: "passion", weight: 3 },
+      { term: "tendresse", weight: 2 },
+      { term: "affection", weight: 2 },
+      { term: "sentiment", weight: 2 },
+      { term: "romantique", weight: 2 },
+      { term: "idylle", weight: 2 },
+      { term: "flamme", weight: 2 },
+      { term: "adoration", weight: 3 },
+      { term: "adorer", weight: 3 },
+      { term: "chérir", weight: 3 },
+      { term: "cherir", weight: 3 },
+      { term: "passionne", weight: 3 },
+      { term: "passionnee", weight: 3 },
+      { term: "fascine", weight: 2 },
+      { term: "fascinee", weight: 2 },
+      { term: "obsede", weight: 2 },
+      { term: "obsedee", weight: 2 },
+      { term: "envouté", weight: 2 },
+      { term: "envoutee", weight: 2 },
+    ],
+    rupture: [
+      { term: "rupture", weight: 4 },
+      { term: "separation", weight: 4 },
+      { term: "quitte", weight: 3 },
+      { term: "quittee", weight: 3 },
+      { term: "quitter", weight: 3 },
+      { term: "ex", weight: 2 },
+      { term: "c'est fini", weight: 4 },
+      { term: "cest fini", weight: 4 },
+      { term: "plus ensemble", weight: 4 },
+      { term: "coeur brise", weight: 4 },
+      { term: "il m'a quitte", weight: 4 },
+      { term: "elle m'a quitte", weight: 4 },
+      { term: "il m a quitte", weight: 4 },
+      { term: "elle m a quitte", weight: 4 },
+      { term: "separation", weight: 4 },
+      { term: "divorce", weight: 4 },
+      { term: "fin de relation", weight: 4 },
+      { term: "fin de relation", weight: 4 },
+      { term: "plus d'amour", weight: 4 },
+      { term: "plus d amour", weight: 4 },
+      { term: "abandon", weight: 3 },
+      { term: "dejete", weight: 3 },
+      { term: "dejete", weight: 3 },
+      { term: "rejete", weight: 3 },
+      { term: "rejete", weight: 3 },
+      { term: "trahi", weight: 3 },
+      { term: "trahie", weight: 3 },
+      { term: "betrayed", weight: 3 },
+      { term: "trompe", weight: 3 },
+      { term: "trompee", weight: 3 },
+      { term: "infidelite", weight: 3 },
+      { term: "infidélité", weight: 3 },
+      { term: "mensonge", weight: 2 },
+      { term: "mensonges", weight: 2 },
+    ],
+    etudes: [
+      { term: "ecole", weight: 2 },
+      { term: "cours", weight: 2 },
+      { term: "examen", weight: 3 },
+      { term: "exam", weight: 3 },
+      { term: "fac", weight: 2 },
+      { term: "universite", weight: 2 },
+      { term: "devoir", weight: 2 },
+      { term: "revisions", weight: 3 },
+      { term: "reviser", weight: 3 },
+      { term: "notes", weight: 2 },
+      { term: "stage", weight: 2 },
+      { term: "memoire", weight: 2 },
+      { term: "these", weight: 2 },
+      { term: "prof", weight: 2 },
+      { term: "oral", weight: 2 },
+      { term: "soutenance", weight: 3 },
+      { term: "rendu", weight: 2 },
+      { term: "partiel", weight: 3 },
+      { term: "controle", weight: 3 },
+      { term: "interrogation", weight: 3 },
+      { term: "dissertation", weight: 2 },
+      { term: "commentaire", weight: 2 },
+      { term: "analyse", weight: 2 },
+      { term: "redaction", weight: 2 },
+      { term: "redaction", weight: 2 },
+      { term: "lecture", weight: 2 },
+      { term: "livre", weight: 1 },
+      { term: "chapitre", weight: 1 },
+      { term: "lecon", weight: 2 },
+      { term: "leçon", weight: 2 },
+      { term: "matiere", weight: 2 },
+      { term: "matière", weight: 2 },
+      { term: "matières", weight: 2 },
+      { term: "programme", weight: 2 },
+      { term: "syllabus", weight: 2 },
+      { term: "bulletin", weight: 2 },
+      { term: "diplome", weight: 3 },
+      { term: "diplôme", weight: 3 },
+      { term: "bac", weight: 3 },
+      { term: "licence", weight: 3 },
+      { term: "master", weight: 3 },
+      { term: "doctorat", weight: 3 },
+    ],
+    famille: [
+      { term: "famille", weight: 3 },
+      { term: "parents", weight: 3 },
+      { term: "maman", weight: 2 },
+      { term: "papa", weight: 2 },
+      { term: "mere", weight: 2 },
+      { term: "pere", weight: 2 },
+      { term: "frere", weight: 2 },
+      { term: "soeur", weight: 2 },
+      { term: "maison", weight: 1 },
+      { term: "chez moi", weight: 2 },
+      { term: "a la maison", weight: 2 },
+      { term: "mon pere", weight: 2 },
+      { term: "ma mere", weight: 2 },
+      { term: "tonton", weight: 2 },
+      { term: "tata", weight: 2 },
+      { term: "oncle", weight: 2 },
+      { term: "tante", weight: 2 },
+      { term: "grand pere", weight: 2 },
+      { term: "grand pere", weight: 2 },
+      { term: "grand mere", weight: 2 },
+      { term: "grand mère", weight: 2 },
+      { term: "papi", weight: 2 },
+      { term: "mamie", weight: 2 },
+      { term: "cousin", weight: 2 },
+      { term: "cousine", weight: 2 },
+      { term: "neveu", weight: 2 },
+      { term: "niece", weight: 2 },
+      { term: "beau pere", weight: 2 },
+      { term: "beau pere", weight: 2 },
+      { term: "belle mere", weight: 2 },
+      { term: "belle mère", weight: 2 },
+      { term: "beau frere", weight: 2 },
+      { term: "beau frère", weight: 2 },
+      { term: "belle soeur", weight: 2 },
+      { term: "belle sœur", weight: 2 },
+      { term: "conjoint", weight: 2 },
+      { term: "conjointe", weight: 2 },
+      { term: "epoux", weight: 2 },
+      { term: "epouse", weight: 2 },
+      { term: "mari", weight: 2 },
+      { term: "femme", weight: 2 },
+      { term: "enfant", weight: 2 },
+      { term: "enfants", weight: 2 },
+      { term: "fils", weight: 2 },
+      { term: "fille", weight: 2 },
+    ],
+    amitie: [
+      { term: "ami", weight: 1 },
+      { term: "amie", weight: 1 },
+      { term: "amis", weight: 2 },
+      { term: "amies", weight: 2 },
+      { term: "pote", weight: 2 },
+      { term: "copain", weight: 1 },
+      { term: "copine", weight: 1 },
+      { term: "trahison", weight: 3 },
+      { term: "dispute", weight: 3 },
+      { term: "meilleur ami", weight: 3 },
+      { term: "meilleure amie", weight: 3 },
+      { term: "groupe", weight: 2 },
+      { term: "potes", weight: 2 },
+      { term: "compagnon", weight: 2 },
+      { term: "compagne", weight: 2 },
+      { term: "camarade", weight: 2 },
+      { term: "confident", weight: 2 },
+      { term: "confidente", weight: 2 },
+      { term: "complice", weight: 2 },
+      { term: "partenaire", weight: 2 },
+      { term: "collègue", weight: 2 },
+      { term: "collegue", weight: 2 },
+      { term: "voisin", weight: 2 },
+      { term: "voisine", weight: 2 },
+      { term: "connaissance", weight: 1 },
+      { term: "relation", weight: 1 },
+      { term: "lien", weight: 1 },
+      { term: "connexion", weight: 1 },
+      { term: "solidarite", weight: 2 },
+      { term: "solidarité", weight: 2 },
+      { term: "soutien", weight: 2 },
+      { term: "aide", weight: 1 },
+      { term: "betrayal", weight: 3 },
+      { term: "mensonge", weight: 2 },
+      { term: "secret", weight: 1 },
+      { term: "confiance", weight: 2 },
+      { term: "jalousie", weight: 2 },
+      { term: "envie", weight: 1 },
+    ],
+    sante: [
+      { term: "sante", weight: 3 },
+      { term: "malade", weight: 3 },
+      { term: "medecin", weight: 3 },
+      { term: "docteur", weight: 3 },
+      { term: "hopital", weight: 3 },
+      { term: "symptome", weight: 3 },
+      { term: "medicament", weight: 3 },
+      { term: "traitement", weight: 3 },
+      { term: "operation", weight: 3 },
+      { term: "douleur physique", weight: 3 },
+      { term: "corps", weight: 1 },
+      { term: "douleur", weight: 2 },
+      { term: "migraine", weight: 3 },
+      { term: "maladie", weight: 3 },
+      { term: "pathologie", weight: 3 },
+      { term: "diagnostic", weight: 3 },
+      { term: "therapie", weight: 3 },
+      { term: "thérapie", weight: 3 },
+      { term: "soins", weight: 3 },
+      { term: "clinique", weight: 2 },
+      { term: "urgence", weight: 3 },
+      { term: "sante mentale", weight: 3 },
+      { term: "santé mentale", weight: 3 },
+      { term: "psychologue", weight: 3 },
+      { term: "psy", weight: 3 },
+      { term: "therapeute", weight: 3 },
+      { term: "psychiatre", weight: 3 },
+      { term: "depression", weight: 4 },
+      { term: "dépression", weight: 4 },
+      { term: "anxiete", weight: 3 },
+      { term: "anxiété", weight: 3 },
+      { term: "stress", weight: 2 },
+      { term: "burnout", weight: 4 },
+      { term: "traumatisme", weight: 3 },
+      { term: "ptsd", weight: 3 },
+      { term: "phobie", weight: 3 },
+      { term: "toc", weight: 3 },
+      { term: "addiction", weight: 3 },
+      { term: "dependance", weight: 3 },
+      { term: "dépendance", weight: 3 },
+      { term: "alcool", weight: 2 },
+      { term: "drogue", weight: 2 },
+      { term: "tabac", weight: 2 },
+      { term: "obesite", weight: 2 },
+      { term: "obésité", weight: 2 },
+      { term: "diabete", weight: 2 },
+      { term: "diabète", weight: 2 },
+      { term: "cancer", weight: 4 },
+      { term: "tumeur", weight: 4 },
+      { term: "infarctus", weight: 4 },
+      { term: "accident", weight: 3 },
+      { term: "blessure", weight: 2 },
+      { term: "fracture", weight: 3 },
+      { term: "entorse", weight: 2 },
+      { term: "fièvre", weight: 2 },
+      { term: "fievre", weight: 2 },
+      { term: "toux", weight: 1 },
+      { term: "rhume", weight: 1 },
+      { term: "grippe", weight: 2 },
+      { term: "allergie", weight: 2 },
+      { term: "asthme", weight: 3 },
+      { term: "eczema", weight: 2 },
+      { term: "eczéma", weight: 2 },
+      { term: "migraine", weight: 3 },
+      { term: "maux de tete", weight: 2 },
+      { term: "maux de tête", weight: 2 },
+      { term: "maux de ventre", weight: 2 },
+      { term: "nausee", weight: 2 },
+      { term: "nausée", weight: 2 },
+      { term: "vertige", weight: 2 },
+      { term: "etourdissement", weight: 2 },
+      { term: "insomnie", weight: 3 },
+      { term: "sommeil", weight: 2 },
+      { term: "cauchemar", weight: 2 },
+      { term: "cauchemars", weight: 2 },
+    ],
+    estime: [
+      { term: "nul", weight: 2 },
+      { term: "nulle", weight: 2 },
+      { term: "incapable", weight: 3 },
+      { term: "pas assez bien", weight: 4 },
+      { term: "honte", weight: 3 },
+      { term: "je vaux rien", weight: 4 },
+      { term: "je suis nul", weight: 4 },
+      { term: "je suis nulle", weight: 4 },
+      { term: "echec", weight: 2 },
+      { term: "pas a la hauteur", weight: 4 },
+      { term: "je me deteste", weight: 4 },
+      { term: "decu de moi", weight: 3 },
+      { term: "decue de moi", weight: 3 },
+      { term: "je suis une merde", weight: 4 },
+      { term: "inutile", weight: 3 },
+      { term: "bon a rien", weight: 4 },
+      { term: "bon à rien", weight: 4 },
+      { term: "bon a rien", weight: 4 },
+      { term: "incompetent", weight: 3 },
+      { term: "incompétent", weight: 3 },
+      { term: "incompetente", weight: 3 },
+      { term: "incompétente", weight: 3 },
+      { term: "stupide", weight: 3 },
+      { term: "idiot", weight: 3 },
+      { term: "idiote", weight: 3 },
+      { term: "con", weight: 3 },
+      { term: "conne", weight: 3 },
+      { term: "imbecile", weight: 3 },
+      { term: "cretin", weight: 3 },
+      { term: "cretine", weight: 3 },
+      { term: "minable", weight: 3 },
+      { term: "pathétique", weight: 3 },
+      { term: "pathetique", weight: 3 },
+      { term: "ridicule", weight: 2 },
+      { term: "humilié", weight: 3 },
+      { term: "humiliee", weight: 3 },
+      { term: "humilié", weight: 3 },
+      { term: "humiliée", weight: 3 },
+      { term: "inferieur", weight: 3 },
+      { term: "inferieure", weight: 3 },
+      { term: "inférieur", weight: 3 },
+      { term: "inférieure", weight: 3 },
+      { term: "complexe", weight: 2 },
+      { term: "timide", weight: 2 },
+      { term: "peur du jugement", weight: 3 },
+      { term: "peur du jugement", weight: 3 },
+      { term: "jugement", weight: 2 },
+      { term: "critique", weight: 2 },
+      { term: "autocritique", weight: 3 },
+      { term: "doute", weight: 2 },
+      { term: "insecurite", weight: 3 },
+      { term: "insécurité", weight: 3 },
+      { term: "confiance en soi", weight: 3 },
+      { term: "confiance en soi", weight: 3 },
+      { term: "manque de confiance", weight: 4 },
+      { term: "manque de confiance", weight: 4 },
+    ],
+    identite: [
+      { term: "qui je suis", weight: 3 },
+      { term: "mon identite", weight: 4 },
+      { term: "genre", weight: 2 },
+      { term: "sexualite", weight: 2 },
+      { term: "orientation", weight: 2 },
+      { term: "trans", weight: 2 },
+      { term: "non-binaire", weight: 3 },
+      { term: "non binaire", weight: 3 },
+      { term: "lgbt", weight: 2 },
+      { term: "queer", weight: 2 },
+      { term: "je me comprends pas", weight: 4 },
+      { term: "me trouver", weight: 3 },
+      { term: "identité", weight: 4 },
+      { term: "identite", weight: 4 },
+      { term: "sexe", weight: 2 },
+      { term: "féminin", weight: 2 },
+      { term: "feminin", weight: 2 },
+      { term: "masculin", weight: 2 },
+      { term: "bisexuel", weight: 2 },
+      { term: "bisexuelle", weight: 2 },
+      { term: "gay", weight: 2 },
+      { term: "lesbienne", weight: 2 },
+      { term: "homo", weight: 2 },
+      { term: "hetero", weight: 2 },
+      { term: "hétéro", weight: 2 },
+      { term: "asexuel", weight: 2 },
+      { term: "asexuelle", weight: 2 },
+      { term: "pansexuel", weight: 2 },
+      { term: "pansexuelle", weight: 2 },
+      { term: "questionnement", weight: 3 },
+      { term: "doute", weight: 2 },
+      { term: "confusion", weight: 3 },
+      { term: "perdu", weight: 3 },
+      { term: "perdue", weight: 3 },
+      { term: "cherche", weight: 2 },
+      { term: "chercher", weight: 2 },
+      { term: "decouvrir", weight: 3 },
+      { term: "découvrir", weight: 3 },
+      { term: "explorer", weight: 2 },
+      { term: "acceptation", weight: 3 },
+      { term: "coming out", weight: 3 },
+      { term: "coming out", weight: 3 },
+      { term: "sortir du placard", weight: 3 },
+      { term: "sortir du placard", weight: 3 },
+      { term: "caché", weight: 2 },
+      { term: "cachee", weight: 2 },
+      { term: "caché", weight: 2 },
+      { term: "cachée", weight: 2 },
+      { term: "secret", weight: 2 },
+      { term: "peur de dire", weight: 3 },
+      { term: "peur de dire", weight: 3 },
+      { term: "jugement", weight: 2 },
+      { term: "rejet", weight: 3 },
+      { term: "famille", weight: 2 },
+      { term: "amis", weight: 2 },
+      { term: "societe", weight: 2 },
+      { term: "société", weight: 2 },
+    ],
+    confusion: [
+      { term: "confus", weight: 3 },
+      { term: "confuse", weight: 3 },
+      { term: "confusion", weight: 3 },
+      { term: "perdu", weight: 3 },
+      { term: "perdue", weight: 3 },
+      { term: "desoriente", weight: 3 },
+      { term: "desorientee", weight: 3 },
+      { term: "désorienté", weight: 3 },
+      { term: "désorientée", weight: 3 },
+      { term: "embrouille", weight: 3 },
+      { term: "embrouillé", weight: 3 },
+      { term: "embrouillée", weight: 3 },
+      { term: "je comprends pas", weight: 4 },
+      { term: "je comprends pas", weight: 4 },
+      { term: "je pige pas", weight: 4 },
+      { term: "je pige pas", weight: 4 },
+      { term: "c'est flou", weight: 3 },
+      { term: "c est flou", weight: 3 },
+      { term: "pas clair", weight: 3 },
+      { term: "pas claire", weight: 3 },
+      { term: "incertain", weight: 2 },
+      { term: "incertaine", weight: 2 },
+      { term: "hesitant", weight: 2 },
+      { term: "hesitante", weight: 2 },
+      { term: "hésitant", weight: 2 },
+      { term: "hésitante", weight: 2 },
+      { term: "doute", weight: 2 },
+      { term: "doutes", weight: 2 },
+      { term: "question", weight: 1 },
+      { term: "questions", weight: 1 },
+      { term: "mystere", weight: 2 },
+      { term: "mystère", weight: 2 },
+      { term: "énigme", weight: 2 },
+      { term: "enigme", weight: 2 },
+      { term: "complexe", weight: 2 },
+      { term: "compliqué", weight: 2 },
+      { term: "compliquée", weight: 2 },
+    ],
+    frustration: [
+      { term: "frustre", weight: 3 },
+      { term: "frustree", weight: 3 },
+      { term: "frustré", weight: 3 },
+      { term: "frustrée", weight: 3 },
+      { term: "frustration", weight: 3 },
+      { term: "agace", weight: 2 },
+      { term: "agacee", weight: 2 },
+      { term: "agaçant", weight: 2 },
+      { term: "agaçante", weight: 2 },
+      { term: "énervant", weight: 2 },
+      { term: "énervante", weight: 2 },
+      { term: "irritant", weight: 2 },
+      { term: "irritante", weight: 2 },
+      { term: "exaspere", weight: 3 },
+      { term: "exasperee", weight: 3 },
+      { term: "exaspéré", weight: 3 },
+      { term: "exaspérée", weight: 3 },
+      { term: "decu", weight: 2 },
+      { term: "decue", weight: 2 },
+      { term: "déçu", weight: 2 },
+      { term: "déçue", weight: 2 },
+      { term: "deception", weight: 3 },
+      { term: "déception", weight: 3 },
+      { term: "marre", weight: 2 },
+      { term: "j'en ai marre", weight: 4 },
+      { term: "j en ai marre", weight: 4 },
+      { term: "fatigue", weight: 2 },
+      { term: "fatiguee", weight: 2 },
+      { term: "las", weight: 2 },
+      { term: "lasse", weight: 2 },
+      { term: "énervé", weight: 2 },
+      { term: "énervée", weight: 2 },
+      { term: "contrarié", weight: 2 },
+      { term: "contrariée", weight: 2 },
+      { term: "vexé", weight: 2 },
+      { term: "vexée", weight: 2 },
+      { term: "blessé", weight: 2 },
+      { term: "blessée", weight: 2 },
+    ],
+    ennui: [
+      { term: "ennui", weight: 3 },
+      { term: "ennuyeux", weight: 2 },
+      { term: "ennuyeuse", weight: 2 },
+      { term: "barbant", weight: 2 },
+      { term: "barbante", weight: 2 },
+      { term: "chiant", weight: 2 },
+      { term: "chiante", weight: 2 },
+      { term: "rasoir", weight: 2 },
+      { term: "mortel", weight: 2 },
+      { term: "mortelle", weight: 2 },
+      { term: "plate", weight: 2 },
+      { term: "fade", weight: 2 },
+      { term: "sans interet", weight: 3 },
+      { term: "sans intérêt", weight: 3 },
+      { term: "pas motive", weight: 3 },
+      { term: "pas motivé", weight: 3 },
+      { term: "pas motivée", weight: 3 },
+      { term: "demotive", weight: 3 },
+      { term: "démotivé", weight: 3 },
+      { term: "démotivée", weight: 3 },
+      { term: "apathique", weight: 2 },
+      { term: "indifferent", weight: 2 },
+      { term: "indifferente", weight: 2 },
+      { term: "blasé", weight: 2 },
+      { term: "blasée", weight: 2 },
+      { term: "saturé", weight: 2 },
+      { term: "saturée", weight: 2 },
+      { term: "ecoeuré", weight: 3 },
+      { term: "écœuré", weight: 3 },
+      { term: "écœurée", weight: 3 },
+    ],
+    espoir: [
+      { term: "espoir", weight: 3 },
+      { term: "esperance", weight: 3 },
+      { term: "espérance", weight: 3 },
+      { term: "optimiste", weight: 2 },
+      { term: "optimisme", weight: 3 },
+      { term: "confiance", weight: 2 },
+      { term: "foi", weight: 2 },
+      { term: "croyance", weight: 2 },
+      { term: "perspectives", weight: 2 },
+      { term: "avenir", weight: 2 },
+      { term: "possibilite", weight: 2 },
+      { term: "possibilité", weight: 2 },
+      { term: "chance", weight: 1 },
+      { term: "opportunite", weight: 2 },
+      { term: "opportunité", weight: 2 },
+      { term: "amelioration", weight: 2 },
+      { term: "amélioration", weight: 2 },
+      { term: "progres", weight: 2 },
+      { term: "progrès", weight: 2 },
+      { term: "evoluer", weight: 2 },
+      { term: "évoluer", weight: 2 },
+      { term: "changer", weight: 1 },
+      { term: "transformation", weight: 2 },
+      { term: "renaissance", weight: 3 },
+      { term: "rebondir", weight: 2 },
+      { term: "relancer", weight: 2 },
+      { term: "reussir", weight: 2 },
+      { term: "réussir", weight: 2 },
+    ],
+    peur: [
+      { term: "peur", weight: 3 },
+      { term: "peureux", weight: 2 },
+      { term: "peureuse", weight: 2 },
+      { term: "effraye", weight: 3 },
+      { term: "effrayee", weight: 3 },
+      { term: "effrayé", weight: 3 },
+      { term: "effrayée", weight: 3 },
+      { term: "terrifie", weight: 4 },
+      { term: "terrifiée", weight: 4 },
+      { term: "terrorise", weight: 4 },
+      { term: "terrorisee", weight: 4 },
+      { term: "terrorisé", weight: 4 },
+      { term: "terrorisée", weight: 4 },
+      { term: "panique", weight: 4 },
+      { term: "paniquer", weight: 4 },
+      { term: "angoisse", weight: 3 },
+      { term: "angoisser", weight: 3 },
+      { term: "crainte", weight: 2 },
+      { term: "appréhension", weight: 2 },
+      { term: "inquiétude", weight: 2 },
+      { term: "inquiétude", weight: 2 },
+      { term: "phobie", weight: 3 },
+      { term: "traumatise", weight: 3 },
+      { term: "traumatisee", weight: 3 },
+      { term: "traumatisé", weight: 3 },
+      { term: "traumatisée", weight: 3 },
+      { term: "paranoia", weight: 3 },
+      { term: "paranoïaque", weight: 3 },
+      { term: "paranoiaque", weight: 3 },
+      { term: "insécurite", weight: 3 },
+      { term: "insecurite", weight: 3 },
+      { term: "vulnerable", weight: 2 },
+      { term: "fragile", weight: 2 },
+    ],
+    culpabilite: [
+      { term: "coupable", weight: 3 },
+      { term: "culpabilite", weight: 3 },
+      { term: "culpabilité", weight: 3 },
+      { term: "honte", weight: 3 },
+      { term: "regret", weight: 3 },
+      { term: "regrets", weight: 3 },
+      { term: "remords", weight: 3 },
+      { term: "j'ai mal agi", weight: 4 },
+      { term: "j ai mal agi", weight: 4 },
+      { term: "j'ai fait du mal", weight: 4 },
+      { term: "j ai fait du mal", weight: 4 },
+      { term: "je m'en veux", weight: 4 },
+      { term: "je m en veux", weight: 4 },
+      { term: "c'est ma faute", weight: 4 },
+      { term: "c est ma faute", weight: 4 },
+      { term: "je regrette", weight: 3 },
+      { term: "j'aurais du", weight: 3 },
+      { term: "j aurais du", weight: 3 },
+      { term: "j'aurais dû", weight: 3 },
+      { term: "j aurais dû", weight: 3 },
+      { term: "si j'avais su", weight: 3 },
+      { term: "si j avais su", weight: 3 },
+      { term: "pardon", weight: 2 },
+      { term: "excuse", weight: 2 },
+      { term: "excuses", weight: 2 },
+      { term: "desole", weight: 3 },
+      { term: "désolé", weight: 3 },
+      { term: "desolee", weight: 3 },
+      { term: "désolée", weight: 3 },
+    ],
+    jalousie: [
+      { term: "jaloux", weight: 3 },
+      { term: "jalouse", weight: 3 },
+      { term: "jalousie", weight: 3 },
+      { term: "envie", weight: 2 },
+      { term: "envieux", weight: 2 },
+      { term: "envieuse", weight: 2 },
+      { term: "ressentiment", weight: 3 },
+      { term: "aigri", weight: 2 },
+      { term: "aigrie", weight: 2 },
+      { term: "rancoeur", weight: 3 },
+      { term: "rancœur", weight: 3 },
+      { term: "amertume", weight: 2 },
+      { term: "frustration", weight: 2 },
+      { term: "injustice", weight: 2 },
+      { term: "pas fair", weight: 3 },
+      { term: "pas fair", weight: 3 },
+      { term: "inégal", weight: 2 },
+      { term: "inegale", weight: 2 },
+      { term: "inégal", weight: 2 },
+      { term: "inégale", weight: 2 },
+      { term: "privilege", weight: 2 },
+      { term: "privilège", weight: 2 },
+      { term: "avantage", weight: 1 },
+      { term: "desavantage", weight: 2 },
+    ],
     gratitude: [
-      "Ça me touche que tu partages ça avec moi !",
-      "C'est doux ce que tu dis... Merci à toi aussi !",
-      "Tu es gentil·le ! Je suis là pour ça.",
-      "Ça me fait vraiment plaisir de pouvoir t'aider, même un peu.",
+      { term: "reconnaissant", weight: 3 },
+      { term: "reconnaissante", weight: 3 },
+      { term: "gratitude", weight: 3 },
+      { term: "tu m'as aide", weight: 3 },
+      { term: "tu m as aide", weight: 3 },
+      { term: "ca m'a aide", weight: 2 },
+      { term: "ca m a aide", weight: 2 },
+      { term: "merci", weight: 2 },
+      { term: "remercier", weight: 2 },
+      { term: "appreciation", weight: 3 },
+      { term: "appréciation", weight: 3 },
+      { term: "bienveillance", weight: 3 },
+      { term: "gentillesse", weight: 3 },
+      { term: "soutien", weight: 2 },
+      { term: "aide", weight: 1 },
+      { term: "presence", weight: 2 },
+      { term: "présence", weight: 2 },
+      { term: "ecoute", weight: 2 },
+      { term: "écoute", weight: 2 },
+      { term: "compréhension", weight: 3 },
+      { term: "comprehension", weight: 3 },
+      { term: "empathie", weight: 3 },
+      { term: "compassion", weight: 3 },
+      { term: "chaleur", weight: 2 },
+      { term: "amour", weight: 2 },
+      { term: "tendresse", weight: 2 },
+      { term: "soin", weight: 2 },
+      { term: "attention", weight: 2 },
+      { term: "interet", weight: 2 },
+      { term: "intérêt", weight: 2 },
+      { term: "importance", weight: 2 },
+      { term: "valeur", weight: 1 },
+      { term: "cadeau", weight: 2 },
+      { term: "don", weight: 2 },
+      { term: "partage", weight: 2 },
+      { term: "confiance", weight: 2 },
+      { term: "respect", weight: 2 },
     ],
-
     remerciement: [
-      "Avec plaisir ! C'est pour ça que je suis là.",
-      "Tu n'as pas à me remercier, j'aime être là pour toi !",
-      "De rien ! Tu mérites qu'on prenne soin de toi.",
-      "C'est moi qui suis contente que tu sois venu·e me parler.",
+      { term: "merci", weight: 2 },
+      { term: "merci beaucoup", weight: 3 },
+      { term: "grand merci", weight: 3 },
+      { term: "je te remercie", weight: 3 },
+      { term: "remerciement", weight: 3 },
+      { term: "remercier", weight: 2 },
+      { term: "gratitude", weight: 2 },
+      { term: "reconnaissance", weight: 3 },
+      { term: "appréciation", weight: 3 },
+      { term: "appreciation", weight: 3 },
+      { term: "félicitations", weight: 2 },
+      { term: "felicitations", weight: 2 },
+      { term: "bravo", weight: 2 },
+      { term: "compliment", weight: 2 },
+      { term: "louange", weight: 2 },
+      { term: "hommage", weight: 2 },
+      { term: "salut", weight: 1 },
+      { term: "honneur", weight: 2 },
+      { term: "respect", weight: 1 },
+      { term: "admiration", weight: 2 },
+      { term: "estime", weight: 1 },
     ],
-
     bonjour: [
-      "Coucou ! Je suis si contente de te parler ! Comment tu vas aujourd'hui ?",
-      "Oh, te voilà ! Ça me fait plaisir. Dis-moi comment tu vas.",
-      "Bonjour ! Je t'attendais. Comment tu te sens ?",
-      "Coucou ! Je suis là. Comment tu vas en ce moment ?",
+      { term: "bonjour", weight: 3 },
+      { term: "salut", weight: 2 },
+      { term: "coucou", weight: 3 },
+      { term: "hello", weight: 2 },
+      { term: "hey", weight: 1 },
+      { term: "bonsoir", weight: 3 },
+      { term: "yo", weight: 1 },
+      { term: "wesh", weight: 1 },
+      { term: "slt", weight: 2 },
+      { term: "cc", weight: 2 },
+      { term: "bjr", weight: 3 },
+      { term: "bsr", weight: 3 },
+      { term: "hi", weight: 1 },
+      { term: "good morning", weight: 3 },
+      { term: "good evening", weight: 3 },
+      { term: "bon matin", weight: 3 },
+      { term: "bonne soirée", weight: 3 },
+      { term: "bonne soiree", weight: 3 },
+      { term: "allô", weight: 2 },
+      { term: "allo", weight: 2 },
+      { term: "ça va", weight: 1 },
+      { term: "ca va", weight: 1 },
+      { term: "comment ça va", weight: 2 },
+      { term: "comment ca va", weight: 2 },
+      { term: "quoi de neuf", weight: 2 },
+      { term: "quoi de neuf", weight: 2 },
+      { term: "ça dit quoi", weight: 1 },
+      { term: "ca dit quoi", weight: 1 },
     ],
-
     aurevoir: [
-      "À bientôt ! Prends soin de toi... je serai là si tu as besoin.",
-      "Au revoir ! N'oublie pas de te ménager. Je t'attends !",
-      "À très vite ! Tu peux revenir quand tu veux, je suis toujours là.",
-      "Prends soin de toi. À bientôt !",
+      { term: "au revoir", weight: 4 },
+      { term: "a bientot", weight: 4 },
+      { term: "bye", weight: 3 },
+      { term: "ciao", weight: 3 },
+      { term: "a plus", weight: 3 },
+      { term: "bonne nuit", weight: 3 },
+      { term: "bonne soiree", weight: 3 },
+      { term: "bonne journee", weight: 3 },
+      { term: "a demain", weight: 3 },
+      { term: "a plus tard", weight: 3 },
+      { term: "a tout a l'heure", weight: 3 },
+      { term: "a tout a l heure", weight: 3 },
+      { term: "salut", weight: 2 },
+      { term: "bye bye", weight: 3 },
+      { term: "adieu", weight: 4 },
+      { term: "au plaisir", weight: 3 },
+      { term: "prends soin de toi", weight: 3 },
+      { term: "prends soin de toi", weight: 3 },
+      { term: "porte toi bien", weight: 3 },
+      { term: "porte toi bien", weight: 3 },
+      { term: "bonne continuation", weight: 3 },
+      { term: "bonne continuation", weight: 3 },
+      { term: "see you", weight: 3 },
+      { term: "goodbye", weight: 3 },
+      { term: "good night", weight: 3 },
+      { term: "see you later", weight: 3 },
+      { term: "take care", weight: 3 },
     ],
+  };
 
-    incompris: [
-      "Je veux bien comprendre... Tu peux me l'expliquer autrement ?",
-      "Hmm, dis-moi en plus, je veux vraiment t'écouter.",
-      "Je ne suis pas sûr·e d'avoir bien saisi... tu peux développer ?",
-      "Raconte-moi davantage, je veux vraiment t'aider.",
-      "Je t'écoute... dis-moi en plus sur ce que tu ressens.",
+  const hasNegationBefore = (text, index) => {
+    const windowStart = Math.max(0, index - 28);
+    const chunk = text.slice(windowStart, index);
+    return NEGATIONS.some((neg) =>
+      new RegExp(`\\b${escapeRegExp(neg)}\\b`).test(chunk)
+    );
+  };
+
+  const hasRecoveryHintNear = (text, index, length) => {
+    const start = Math.max(0, index - 20);
+    const end = Math.min(text.length, index + length + 20);
+    const chunk = text.slice(start, end);
+    return RECOVERY_WORDS.some((word) => chunk.includes(word));
+  };
+
+  const hasIntensifierNear = (text, index, length) => {
+    const start = Math.max(0, index - 16);
+    const end = Math.min(text.length, index + length + 16);
+    const chunk = text.slice(start, end);
+    return INTENSIFIERS.some((word) => chunk.includes(word));
+  };
+
+  const scoreKeywordGroup = (text, entries) => {
+    let score = 0;
+
+    for (const entry of entries) {
+      const regex = new RegExp(`\\b${escapeRegExp(entry.term)}\\b`, "g");
+      let match;
+
+      while ((match = regex.exec(text)) !== null) {
+        let weight = entry.weight;
+
+        if (hasNegationBefore(text, match.index)) weight -= 3;
+        if (hasRecoveryHintNear(text, match.index, entry.term.length)) weight -= 2;
+        if (hasIntensifierNear(text, match.index, entry.term.length)) weight += 1;
+
+        score += weight;
+      }
+    }
+
+    return score;
+  };
+
+  const detectEmotion = (text, lastEmotion = null) => {
+    const lower = normalizeText(text);
+    const scores = {};
+
+    for (const [emotion, entries] of Object.entries(EMOTION_KEYWORDS)) {
+      scores[emotion] = scoreKeywordGroup(lower, entries);
+      if (lastEmotion && emotion === lastEmotion) scores[emotion] += 0.35;
+    }
+
+    const positiveBoost = POSITIVE_HINTS.some((word) => lower.includes(word));
+    if (positiveBoost) {
+      scores.joie = (scores.joie || 0) + 1.25;
+      scores.tristesse = (scores.tristesse || 0) - 0.5;
+      scores.anxiete = (scores.anxiete || 0) - 0.5;
+      scores.stress = (scores.stress || 0) - 0.5;
+    }
+
+    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    const best = sorted[0];
+
+    if (!best || best[1] < 0) {
+      return { emotion: "neutre", scores };
+    }
+
+    return { emotion: best[0], scores };
+  };
+
+  const INTENSITY_WORDS = {
+    fort: [
+      "j'en peux plus",
+      "je n'en peux plus",
+      "je peux plus",
+      "au bout",
+      "je craque",
+      "je vais craquer",
+      "insupportable",
+      "horrible",
+      "terrible",
+      "tout le temps",
+      "vraiment trop",
+      "completement",
+      "totalement",
+      "tellement",
+      "trop",
+      "trop trop",
     ],
-  },
+    moyen: [
+      "beaucoup",
+      "assez",
+      "pas mal",
+      "souvent",
+      "plutot",
+      "vraiment",
+      "quand meme",
+      "ca pese",
+      "dur",
+      "difficile",
+    ],
+    faible: [
+      "un peu",
+      "legerement",
+      "parfois",
+      "un petit peu",
+      "vaguement",
+      "de temps en temps",
+    ],
+  };
 
-  // ─────────────────────────────────────────────
-  // SUNNY — sage, observateur, optimiste
-  // ─────────────────────────────────────────────
-  sage: {
+  const detectIntensity = (text, scores = {}) => {
+    const lower = normalizeText(text);
 
-    stress: {
-      faible: [
-        "Je remarque quelque chose dans tes mots... qu'est-ce qui te préoccupe ?",
-        "Le stress a souvent une source précise. Tu arrives à mettre le doigt dessus ?",
-        "Parfois un pas en arrière permet de mieux voir. Qu'est-ce qui te pèse ?",
-        "Quelque chose te tracasse... tu veux en parler ?",
+    for (const word of INTENSITY_WORDS.fort) {
+      if (lower.includes(word)) return "fort";
+    }
+
+    for (const word of INTENSITY_WORDS.moyen) {
+      if (lower.includes(word)) return "moyen";
+    }
+
+    const maxScore = Math.max(...Object.values(scores || {}), 0);
+    if (maxScore >= 6) return "fort";
+    if (maxScore >= 3) return "moyen";
+
+    return "faible";
+  };
+
+  // ============================================================
+  // TOPIC / VALENCE / INTENT / CAUSE
+  // ============================================================
+  const TOPIC_KEYWORDS = {
+    projet: [
+      "projet",
+      "soutenance",
+      "oral",
+      "presentation",
+      "rendu",
+      "maquette",
+      "portfolio",
+    ],
+    etudes: [
+      "cours",
+      "fac",
+      "examen",
+      "exam",
+      "note",
+      "devoir",
+      "revision",
+      "prof",
+      "partiel",
+      "memoire",
+      "these",
+      "universite",
+    ],
+    travail: [
+      "travail",
+      "boulot",
+      "job",
+      "stage",
+      "patron",
+      "collegue",
+      "entretien",
+      "emploi",
+      "entreprise",
+      "reunion",
+    ],
+    famille: [
+      "maman",
+      "papa",
+      "parents",
+      "frere",
+      "soeur",
+      "famille",
+      "mere",
+      "pere",
+      "chez moi",
+      "maison",
+      "tonton",
+      "tata",
+    ],
+    amitie: [
+      "ami",
+      "amie",
+      "pote",
+      "groupe",
+      "copain",
+      "copine",
+      "meilleur ami",
+      "meilleure amie",
+      "potes",
+    ],
+    amour: [
+      "crush",
+      "relation",
+      "copain",
+      "copine",
+      "amoureux",
+      "amoureuse",
+      "ex",
+      "couple",
+      "flirt",
+    ],
+    sante: [
+      "malade",
+      "douleur",
+      "medecin",
+      "hopital",
+      "traitement",
+      "fatigue",
+      "migraine",
+      "corps",
+      "angoisse",
+      "panique",
+      "symptome",
+    ],
+    argent: [
+      "argent",
+      "payer",
+      "paie",
+      "salaire",
+      "euro",
+      "euros",
+      "budget",
+      "depense",
+      "prix",
+      "achat",
+    ],
+    quotidien: [
+      "journee",
+      "maison",
+      "chez moi",
+      "routine",
+      "vie",
+      "quotidien",
+      "semaine",
+      "matin",
+      "soir",
+      "aujourd'hui",
+    ],
+  };
+
+  const detectTopic = (text) => {
+    const lower = normalizeText(text);
+    const scores = {};
+
+    for (const [topic, words] of Object.entries(TOPIC_KEYWORDS)) {
+      scores[topic] = words.reduce(
+        (acc, word) => acc + (lower.includes(word) ? 1 : 0),
+        0
+      );
+    }
+
+    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    if (!sorted.length || sorted[0][1] === 0) return "general";
+    return sorted[0][0];
+  };
+
+  const detectValence = (emotion, text, eventType) => {
+    const lower = normalizeText(text);
+
+    if (
+      ["bonjour", "remerciement", "gratitude", "aurevoir"].includes(emotion) ||
+      ["small_talk", "greeting", "thanks"].includes(eventType)
+    ) {
+      return "social";
+    }
+
+    if (
+      [
+        "annonce_positive",
+        "cadeau_recu",
+        "soutien_recu",
+        "succes",
+        "achat",
+      ].includes(eventType)
+    ) {
+      return "positive";
+    }
+
+    if (
+      [
+        "conflit",
+        "perte",
+        "rupture_event",
+        "echec",
+        "pression_a_venir",
+        "blocage",
+      ].includes(eventType)
+    ) {
+      return "negative";
+    }
+
+    if (emotion === "joie") return "positive";
+    if (
+      [
+        "stress",
+        "tristesse",
+        "fatigue",
+        "solitude",
+        "anxiete",
+        "colere",
+        "rupture",
+        "estime",
+      ].includes(emotion)
+    ) {
+      return "negative";
+    }
+
+    if (emotion === "neutre") return "neutral";
+
+    if (
+      lower.includes("mais") ||
+      lower.includes("en meme temps") ||
+      lower.includes("a la fois")
+    ) {
+      return "mixed";
+    }
+
+    return "neutral";
+  };
+
+  const SHORT_SOCIAL_MESSAGES = [
+    "salut",
+    "coucou",
+    "bonjour",
+    "hey",
+    "yo",
+    "cc",
+    "ça va",
+    "ca va",
+    "ça va super",
+    "ca va super",
+    "ça va bien",
+    "ca va bien",
+    "super",
+    "trop bien",
+    "oui",
+    "non",
+    "bof",
+    "grave",
+    "ok",
+    "okay",
+    "merci",
+    "merciii",
+    "mdr",
+    "mdrr",
+    "lol",
+  ];
+
+  const detectIntent = (text, emotion, eventType) => {
+    const lower = normalizeText(text);
+
+    if (SHORT_SOCIAL_MESSAGES.includes(lower)) return "social";
+    if (["small_talk", "greeting", "thanks"].includes(eventType)) return "social";
+    if (["bonjour", "aurevoir", "gratitude", "remerciement"].includes(emotion)) {
+      return "social";
+    }
+
+    if (
+      lower.includes("aide-moi") ||
+      lower.includes("aide moi") ||
+      lower.includes("aide moi a") ||
+      lower.includes("qu'est-ce que je fais") ||
+      lower.includes("qu'est ce que je fais") ||
+      lower.includes("je sais pas quoi faire") ||
+      lower.includes("je ne sais pas quoi faire") ||
+      lower.includes("donne moi un conseil") ||
+      lower.includes("que faire")
+    ) {
+      return "help";
+    }
+
+    if (
+      lower.includes("pourquoi") ||
+      lower.includes("comment") ||
+      lower.endsWith("?") ||
+      lower.includes("?")
+    ) {
+      return "question";
+    }
+
+    if (
+      [
+        "annonce_positive",
+        "cadeau_recu",
+        "soutien_recu",
+        "succes",
+        "achat",
+      ].includes(eventType)
+    ) {
+      return "celebrate";
+    }
+
+    if (
+      lower.includes("j'ai besoin") ||
+      lower.includes("j ai besoin") ||
+      lower.includes("je veux juste parler") ||
+      lower.includes("j'avais besoin de le dire") ||
+      lower.includes("j avais besoin de le dire")
+    ) {
+      return "support";
+    }
+
+    if (
+      lower.includes("je suis") ||
+      lower.includes("je me sens") ||
+      lower.includes("ça me rend") ||
+      lower.includes("ca me rend") ||
+      lower.includes("ça me fait") ||
+      lower.includes("ca me fait") ||
+      lower.includes("c'est") ||
+      lower.includes("cest") ||
+      lower.includes("mon") ||
+      lower.includes("ma ")
+    ) {
+      return "share";
+    }
+
+    return "explore";
+  };
+
+  const hasConcreteCause = (text) => {
+    const lower = normalizeText(text);
+
+    const causeMarkers = [
+      "parce que",
+      "car",
+      "c'est",
+      "cest",
+      "a cause de",
+      "grace a",
+      "grace au",
+      "depuis que",
+      "suite a",
+      "a cause",
+      "vu que",
+      "comme",
+      "pour ",
+      "par ",
+    ];
+
+    return causeMarkers.some((marker) => lower.includes(marker));
+  };
+
+  const hasConcreteDetails = (text) => {
+    const lower = normalizeText(text);
+
+    const detailWords = [
+      "projet",
+      "soutenance",
+      "oral",
+      "exam",
+      "examen",
+      "maman",
+      "ami",
+      "copain",
+      "rupture",
+      "stage",
+      "travail",
+      "note",
+      "resultat",
+      "famille",
+      "cours",
+      "prof",
+      "relation",
+      "douleur",
+      "medecin",
+      "presentation",
+      "rendu",
+      "voiture",
+      "cadeau",
+      "papa",
+      "pere",
+      "mere",
+      "achat",
+      "offert",
+    ];
+
+    return detailWords.some((word) => lower.includes(word));
+  };
+
+  const detectCauseLevel = (text) => {
+    if (hasConcreteCause(text)) return "claire";
+    if (hasConcreteDetails(text)) return "partielle";
+    return "vague";
+  };
+
+  // ============================================================
+  // EVENT TYPE
+  // ============================================================
+  const POSITIVE_EVENT_PATTERNS = [
+    /j[' ]?ai achete/,
+    /j[' ]?ai eu/,
+    /j[' ]?ai reussi/,
+    /j[' ]?ai trouve/,
+    /j[' ]?ai gagne/,
+    /j[' ]?ai fini/,
+    /j[' ]?ai valide/,
+    /on m[' ]?a offert/,
+    /on m[' ]?a fait un cadeau/,
+    /m[' ]?a fait un cadeau/,
+    /m[' ]?a offert/,
+    /j[' ]?ai recu/,
+    /c[' ]?est valide/,
+    /c[' ]?est bon/,
+    /j[' ]?ai ma voiture/,
+    /j[' ]?ai achete une voiture/,
+    /j[' ]?ai trouve un stage/,
+    /j[' ]?ai eu mon/,
+    /j[' ]?ai passe/,
+  ];
+
+  const SUPPORT_EVENT_PATTERNS = [
+    /m[' ]?a aide/,
+    /m[' ]?a soutenu/,
+    /m[' ]?a encourage/,
+    /m[' ]?a fait un cadeau/,
+    /m[' ]?a offert/,
+    /a pense a moi/,
+    /a ete la pour moi/,
+    /etait la pour moi/,
+  ];
+
+  const CONFLICT_PATTERNS = [
+    /je me suis embrouille/,
+    /on s[' ]?est dispute/,
+    /dispute/,
+    /conflit/,
+    /on s[' ]?est pris la tete/,
+    /engueule/,
+    /embrouille/,
+  ];
+
+  const LOSS_PATTERNS = [
+    /j[' ]?ai perdu/,
+    /perdu/,
+    /manque/,
+    /elle est partie/,
+    /il est parti/,
+    /c[' ]?est fini/,
+    /rupture/,
+  ];
+
+  const FAILURE_PATTERNS = [
+    /j[' ]?ai rate/,
+    /j[' ]?ai echoue/,
+    /echec/,
+    /j[' ]?ai foire/,
+    /j[' ]?ai loupe/,
+  ];
+
+  const PRESSURE_PATTERNS = [
+    /demain/,
+    /reunion/,
+    /oral/,
+    /soutenance/,
+    /examen/,
+    /exam/,
+    /j[' ]?ai peur de/,
+    /je stresse pour/,
+    /je panique pour/,
+  ];
+
+  const BLOCKAGE_PATTERNS = [
+    /je suis bloque/,
+    /j[' ]?arrive pas/,
+    /je n[' ]?arrive pas/,
+    /j[' ]?y arrive pas/,
+    /je sais pas quoi faire/,
+    /je ne sais pas quoi faire/,
+    /je suis perdu/,
+    /je suis perdue/,
+  ];
+
+  const SMALL_TALK_PATTERNS = [
+    /^(salut|bonjour|coucou|hey|yo|cc)$/,
+    /^(ca va|ça va|ca va super|ça va super|ca va bien|ça va bien|super|trop bien|oui|non|bof|grave|ok|okay|mdr|mdrr|lol)$/,
+  ];
+
+  const THANKS_PATTERNS = [
+    /^merci+$/,
+    /^merci+ beaucoup$/,
+    /^merciii+$/,
+    /^grand merci$/,
+  ];
+
+  const detectEventType = (text, emotion) => {
+    const lower = normalizeText(text);
+
+    if (SMALL_TALK_PATTERNS.some((p) => p.test(lower))) {
+      if (["bonjour"].includes(emotion) || /^(salut|bonjour|coucou|hey|yo|cc)$/.test(lower)) {
+        return "greeting";
+      }
+      return "small_talk";
+    }
+
+    if (THANKS_PATTERNS.some((p) => p.test(lower))) return "thanks";
+    if (POSITIVE_EVENT_PATTERNS.some((p) => p.test(lower))) {
+      if (lower.includes("cadeau") || lower.includes("offert")) return "cadeau_recu";
+      if (lower.includes("aide") || lower.includes("soutenu") || lower.includes("encourage")) return "soutien_recu";
+      if (lower.includes("achete") || lower.includes("voiture") || lower.includes("achat")) return "achat";
+      if (
+        lower.includes("reussi") ||
+        lower.includes("valide") ||
+        lower.includes("trouve un stage") ||
+        lower.includes("eu mon")
+      ) {
+        return "succes";
+      }
+      return "annonce_positive";
+    }
+
+    if (SUPPORT_EVENT_PATTERNS.some((p) => p.test(lower))) return "soutien_recu";
+    if (CONFLICT_PATTERNS.some((p) => p.test(lower))) return "conflit";
+    if (LOSS_PATTERNS.some((p) => p.test(lower))) {
+      if (lower.includes("rupture") || lower.includes("c'est fini") || lower.includes("cest fini")) {
+        return "rupture_event";
+      }
+      return "perte";
+    }
+    if (FAILURE_PATTERNS.some((p) => p.test(lower))) return "echec";
+    if (PRESSURE_PATTERNS.some((p) => p.test(lower))) return "pression_a_venir";
+    if (BLOCKAGE_PATTERNS.some((p) => p.test(lower))) return "blocage";
+
+    return "none";
+  };
+
+  // ============================================================
+  // CONTEXTE
+  // ============================================================
+  const conversationContext = {
+    lastEmotion: null,
+    lastIntensity: null,
+    lastMode: null,
+    lastTopic: null,
+    lastEventType: null,
+    lastIntent: null,
+    messageCount: 0,
+    askedQuestion: false,
+    history: [],
+    moodTrend: [],
+  };
+
+  const intensityValue = {
+    faible: 1,
+    moyen: 2,
+    fort: 3,
+  };
+
+  const updateConversationMemory = (payload) => {
+    conversationContext.history.push({
+      role: "user",
+      timestamp: Date.now(),
+      ...payload,
+    });
+
+    if (conversationContext.history.length > 12) {
+      conversationContext.history.shift();
+    }
+
+    conversationContext.moodTrend.push({
+      emotion: payload.emotion,
+      intensity: payload.intensity,
+    });
+
+    if (conversationContext.moodTrend.length > 6) {
+      conversationContext.moodTrend.shift();
+    }
+
+    conversationContext.lastEmotion = payload.emotion;
+    conversationContext.lastIntensity = payload.intensity;
+    conversationContext.lastTopic = payload.topic;
+    conversationContext.lastEventType = payload.eventType;
+    conversationContext.lastIntent = payload.intent;
+    conversationContext.messageCount += 1;
+  };
+
+  const rememberAssistantMessage = (text, meta = {}) => {
+    conversationContext.history.push({
+      role: "assistant",
+      text,
+      timestamp: Date.now(),
+      ...meta,
+    });
+
+    if (conversationContext.history.length > 12) {
+      conversationContext.history.shift();
+    }
+  };
+
+  const getMoodTrend = () => {
+    if (conversationContext.moodTrend.length < 2) return "stable";
+
+    const recent = conversationContext.moodTrend.slice(-3);
+    const values = recent.map((item) => intensityValue[item.intensity] || 1);
+
+    if (values[values.length - 1] > values[0]) return "worsening";
+    if (values[values.length - 1] < values[0]) return "improving";
+    return "stable";
+  };
+
+  const isSameThemeRepeating = (emotion, topic) => {
+    const lastUserMessages = conversationContext.history
+      .filter((entry) => entry.role === "user")
+      .slice(-4);
+
+    if (lastUserMessages.length < 3) return false;
+
+    const sameEmotionCount = lastUserMessages.filter(
+      (entry) => entry.emotion === emotion
+    ).length;
+
+    const sameTopicCount =
+      topic !== "general"
+        ? lastUserMessages.filter((entry) => entry.topic === topic).length
+        : 0;
+
+    return sameEmotionCount >= 3 || sameTopicCount >= 3;
+  };
+
+  const getLastAssistantQuestion = () => {
+    const lastAssistant = [...conversationContext.history]
+      .reverse()
+      .find((entry) => entry.role === "assistant");
+
+    if (!lastAssistant?.text) return "";
+    return lastAssistant.text;
+  };
+
+  const isLikelyAnswerToPrevious = (text) => {
+    const lower = normalizeText(text);
+    const previousQuestion = normalizeText(getLastAssistantQuestion());
+
+    if (!previousQuestion || !previousQuestion.includes("?")) return false;
+
+    if (lower.length <= 24) return true;
+
+    const answerMarkers = [
+      "oui",
+      "non",
+      "bah",
+      "ben",
+      "c'est",
+      "cest",
+      "parce que",
+      "mon",
+      "ma ",
+      "j'ai",
+      "j ai",
+      "c'est que",
+      "cest que",
+    ];
+
+    return answerMarkers.some((marker) => lower.startsWith(marker));
+  };
+
+  // ============================================================
+  // STRATÉGIES
+  // ============================================================
+  const chooseResponseStrategy = ({
+    emotion,
+    valence,
+    intensity,
+    topic,
+    eventType,
+    intent,
+    causeLevel,
+    trend,
+    isAnswerToPrevious,
+  }) => {
+    if (eventType === "greeting" || eventType === "small_talk" || eventType === "thanks") {
+      return "social_reply";
+    }
+
+    if (
+      ["annonce_positive", "cadeau_recu", "soutien_recu", "succes", "achat"].includes(
+        eventType
+      )
+    ) {
+      return "celebrate_with_context";
+    }
+
+    if (intent === "celebrate" && valence === "positive") {
+      return "celebrate_with_context";
+    }
+
+    if (trend === "worsening" && intensity === "fort") {
+      return "soothe";
+    }
+
+    if (
+      ["stress", "anxiete"].includes(emotion) &&
+      ["moyen", "fort"].includes(intensity)
+    ) {
+      return intent === "help" ? "soothe_then_problem_solve" : "soothe";
+    }
+
+    if (
+      ["tristesse", "solitude", "rupture", "estime", "famille", "amitie", "culpabilite"].includes(
+        emotion
+      )
+    ) {
+      return causeLevel === "vague"
+        ? "validate_and_clarify"
+        : "validate_and_deepen";
+    }
+
+    if (emotion === "colere" || emotion === "jalousie") {
+      return causeLevel === "vague"
+        ? "validate_and_clarify"
+        : "validate_and_deepen";
+    }
+
+    if (emotion === "fatigue") {
+      return intent === "help"
+        ? "support_then_action"
+        : causeLevel === "vague"
+        ? "validate_and_clarify"
+        : "validate_and_deepen";
+    }
+
+    if (emotion === "joie") {
+      return causeLevel === "vague"
+        ? "celebrate_light"
+        : "celebrate_with_context";
+    }
+
+    if (emotion === "espoir") {
+      return causeLevel === "vague"
+        ? "celebrate_light"
+        : "celebrate_with_context";
+    }
+
+    if (["confusion", "peur"].includes(emotion)) {
+      return causeLevel === "vague"
+        ? "validate_and_clarify"
+        : "validate_and_deepen";
+    }
+
+    if (emotion === "frustration") {
+      return causeLevel === "vague"
+        ? "validate_and_clarify"
+        : "validate_and_deepen";
+    }
+
+    if (emotion === "ennui") {
+      return intent === "help"
+        ? "support_then_action"
+        : causeLevel === "vague"
+        ? "validate_and_clarify"
+        : "validate_and_deepen";
+    }
+
+    if (intent === "help") return "problem_solve";
+    if (intent === "question") return "clarify";
+    if (isAnswerToPrevious && causeLevel !== "vague") return "contextual_follow_up";
+    if (causeLevel !== "vague") return "validate_and_deepen";
+    return "validate_and_clarify";
+  };
+
+  // ============================================================
+  // LIBRAIRIE DE RÉPONSES
+  // ============================================================
+  const STYLE_VOICE = {
+    doux: {
+      validation: {
+        faible: [
+          "Je t'entends.",
+          "Je suis là avec toi.",
+          "Merci de me le dire.",
+          "D'accord, je t'écoute.",
+        ],
+        moyen: [
+          "Je t'entends vraiment.",
+          "Merci de me confier ça.",
+          "Tu as bien fait de venir m'en parler.",
+          "Je suis là, vraiment.",
+        ],
+        fort: [
+          "Je vois que c'est très lourd pour toi.",
+          "Tu n'as pas à porter ça seul·e.",
+          "Ce que tu ressens compte vraiment.",
+          "Je reste là avec toi.",
+        ],
+      },
+      cheer: [
+        "Ohhh, ça c'est une belle nouvelle.",
+        "Ça me fait sourire pour toi.",
+        "C'est trop chouette, vraiment.",
+        "Je suis contente pour toi.",
       ],
-      moyen: [
-        "La pression peut vite déborder... Tu as essayé de prioriser ce qui compte vraiment ?",
-        "Je t'écoute. Qu'est-ce qui génère le plus de stress en ce moment ?",
-        "Le stress dit souvent quelque chose d'important. Qu'est-ce qu'il essaie de te dire ?",
-        "Quand tout s'accumule, c'est difficile de voir clair. Qu'est-ce qui pèse le plus ?",
-        "Est-ce que tu as pu te reposer un peu malgré tout ça ?",
-      ],
-      fort: [
-        "Tu portes beaucoup là. Est-ce qu'il y a quelque chose que tu peux lâcher, même un peu ?",
-        "Parfois notre esprit s'emballe. Pose tout ici, on regarde ça ensemble.",
-        "Ce niveau de stress mérite attention. Qu'est-ce qui se passe vraiment ?",
-        "Quand c'est aussi intense... est-ce que tu dors, tu manges correctement ?",
-        "Tu es à bout là. Qu'est-ce qui serait le premier petit pas pour alléger ça ?",
+      casual: [
+        "Coucou toi.",
+        "Ça fait plaisir de te voir.",
+        "Je suis là.",
+        "Je t'écoute.",
       ],
     },
+    sage: {
+      validation: {
+        faible: [
+          "Je t'écoute.",
+          "D'accord, je vois.",
+          "Merci de me le partager.",
+          "Je suis là.",
+        ],
+        moyen: [
+          "Je t'écoute attentivement.",
+          "Tu fais bien d'en parler.",
+          "Merci de me confier ça.",
+          "Je comprends que ce soit important pour toi.",
+        ],
+        fort: [
+          "Ce que tu vis mérite d'être pris au sérieux.",
+          "Je vois que c'est intense pour toi.",
+          "Tu n'as pas à minimiser ce que tu ressens.",
+          "Je reste avec toi là-dedans.",
+        ],
+      },
+      cheer: [
+        "Ah, je comprends. C'est une bonne nouvelle.",
+        "Je vois, et ça a l'air de vraiment compter pour toi.",
+        "C'est un beau moment pour toi, on dirait.",
+        "Je suis content·e pour toi.",
+      ],
+      casual: [
+        "Bonjour.",
+        "Je suis là.",
+        "Je t'écoute.",
+        "D'accord.",
+      ],
+    },
+    energique: {
+      validation: {
+        faible: [
+          "Hey, je t'écoute.",
+          "Ok, je suis là.",
+          "Vas-y, raconte.",
+          "Je capte.",
+        ],
+        moyen: [
+          "Ok, je t'entends vraiment.",
+          "Merci de me le dire.",
+          "T'as bien fait d'en parler.",
+          "Je suis avec toi là.",
+        ],
+        fort: [
+          "Woah, je vois que c'est super lourd pour toi.",
+          "Ok, là je sens que ça déborde.",
+          "Tu n'as pas à gérer ça seul·e.",
+          "Je reste avec toi, d'accord ?",
+        ],
+      },
+      cheer: [
+        "Aaaah trop bien !!",
+        "Waaaah, énorme !!",
+        "Mais ouiii, trop cool !!",
+        "Trop bien pour toi !!",
+      ],
+      casual: [
+        "Heyy.",
+        "Je suis là.",
+        "Vas-y.",
+        "Ça marche.",
+      ],
+    },
+  };
 
+  const GENERIC_REFORMULATIONS = {
+    stress: [
+      "On dirait que la pression prend beaucoup de place.",
+      "J'ai l'impression que tu portes trop de choses à la fois.",
+      "Ça ressemble à un vrai débordement.",
+    ],
+    tristesse: [
+      "Je sens une vraie peine dans ce que tu dis.",
+      "On dirait qu'il y a quelque chose de douloureux derrière tes mots.",
+      "Je sens beaucoup de tristesse là-dedans.",
+    ],
+    joie: [
+      "Je sens qu'il y a quelque chose de vraiment positif pour toi.",
+      "On dirait qu'il y a une vraie lumière dans ce que tu racontes.",
+      "Je sens que ça te fait du bien.",
+    ],
+    fatigue: [
+      "J'ai l'impression que ton énergie est au plus bas.",
+      "On dirait que tu es vraiment vidé·e.",
+      "Ça ressemble à une grosse fatigue qui s'accumule.",
+    ],
+    solitude: [
+      "Ça ressemble à un vrai sentiment d'isolement.",
+      "On dirait que tu te sens un peu seul·e avec tout ça.",
+      "Je sens que le manque de lien te pèse.",
+    ],
+    anxiete: [
+      "On dirait que ton esprit tourne beaucoup.",
+      "Je sens une vraie inquiétude derrière tes mots.",
+      "Ça ressemble à une tension qui prend beaucoup d'espace.",
+    ],
+    colere: [
+      "Je sens que quelque chose t'a profondément agacé·e.",
+      "On dirait qu'une limite a été dépassée pour toi.",
+      "Je sens une vraie colère là-dessous.",
+    ],
+    amour: [
+      "On dirait qu'une personne compte beaucoup pour toi.",
+      "Je sens quelque chose de tendre ou d'intense dans ce que tu dis.",
+      "Ça ressemble à de vrais sentiments.",
+    ],
+    rupture: [
+      "On dirait que cette séparation te fait vraiment mal.",
+      "Je sens une vraie blessure du côté du coeur.",
+      "Ça ressemble à une perte difficile à vivre.",
+    ],
+    etudes: [
+      "On dirait que les études te prennent beaucoup d'espace mental.",
+      "Je sens que la charge scolaire te pèse.",
+      "Ça ressemble à une pression académique bien lourde.",
+    ],
+    famille: [
+      "On dirait qu'il y a quelque chose de compliqué avec tes proches.",
+      "Je sens que ce qui se passe dans ta famille te touche beaucoup.",
+      "Ça ressemble à une situation familiale pesante.",
+    ],
+    amitie: [
+      "On dirait qu'une amitié te blesse ou te préoccupe.",
+      "Je sens que quelque chose coince dans tes liens avec les autres.",
+      "Ça ressemble à une vraie peine relationnelle.",
+    ],
+    sante: [
+      "Je sens que ton corps ou ta santé prennent de la place dans ce que tu vis.",
+      "On dirait que ce que tu ressens physiquement ou mentalement te pèse vraiment.",
+      "Ça ressemble à quelque chose qu'il ne faut pas minimiser.",
+    ],
+    estime: [
+      "Je sens que tu es très dur·e avec toi-même.",
+      "On dirait que ton regard sur toi te fait mal.",
+      "Ça ressemble à beaucoup de doute ou de dévalorisation.",
+    ],
+    identite: [
+      "On dirait que tu traverses un vrai questionnement sur toi-même.",
+      "Je sens quelque chose de profond dans ta façon de parler de toi.",
+      "Ça ressemble à une période où tu te cherches beaucoup.",
+    ],
+    confusion: [
+      "Je sens que les choses sont un peu floues pour toi en ce moment.",
+      "On dirait que tu as du mal à y voir clair.",
+      "Ça semble un peu embrouillé dans ta tête.",
+    ],
+    frustration: [
+      "Je sens une vraie frustration derrière tes mots.",
+      "On dirait que quelque chose te bloque ou t'agace profondément.",
+      "Ça ressemble à une accumulation d'irritations.",
+    ],
+    ennui: [
+      "Je sens un certain ennui ou un manque de motivation.",
+      "On dirait que les choses te semblent fades en ce moment.",
+      "Ça ressemble à une période où tout te lasse.",
+    ],
+    espoir: [
+      "Je sens qu'il y a de l'espoir qui pointe chez toi.",
+      "On dirait que tu gardes une petite flamme d'optimisme.",
+      "Ça fait du bien d'entendre cette note positive.",
+    ],
+    peur: [
+      "Je sens une peur bien présente derrière tes mots.",
+      "On dirait que quelque chose t'effraie vraiment.",
+      "Ça ressemble à une angoisse profonde.",
+    ],
+    culpabilite: [
+      "Je sens que tu te sens coupable de quelque chose.",
+      "On dirait que tu regrettes profondément une action ou une parole.",
+      "Ça ressemble à un vrai poids sur la conscience.",
+    ],
+    jalousie: [
+      "Je sens une jalousie qui te ronge un peu.",
+      "On dirait que tu ressens de l'injustice ou de l'envie envers quelqu'un.",
+      "Ça ressemble à un ressentiment qui s'accumule.",
+    ],
+    neutre: [
+      "Je veux bien mieux comprendre ce que tu traverses.",
+      "Je sens qu'il y a quelque chose derrière tes mots.",
+      "Je suis là pour écouter ce qu'il se passe pour toi.",
+    ],
+  };
+
+  const CONTEXTUAL_CELEBRATIONS = {
+    achat: {
+      general: [
+        "Félicitations ! Ça doit te faire super plaisir. C'était un achat que tu attendais depuis longtemps ?",
+        "Oh, trop bien ! Tu dois être content·e. C'est quelque chose que tu voulais depuis un moment ?",
+      ],
+      argent: [
+        "Ah, je vois ! Un achat important, ça marque. Tu te sens surtout excité·e, fier·e, ou soulagé·e ?",
+        "Trop bien. Quand on concrétise un achat qui compte, ça fait quelque chose. C'était prévu depuis longtemps ?",
+      ],
+      famille: [
+        "Ohhh, je vois. Ça a dû te faire super plaisir. Tu t'y attendais ou c'était une surprise ?",
+        "C'est adorable, ça. Quand ça vient d'un proche, ça touche encore plus. C'était une surprise ?",
+      ],
+      quotidien: [
+        "Trop bien pour toi ! Ça change quelque chose dans ton quotidien ?",
+        "Ah, je comprends pourquoi tu es content·e. Qu'est-ce qui te fait le plus plaisir dans cet achat ?",
+      ],
+    },
+    cadeau_recu: {
+      famille: [
+        "Oh, c'est trop mignon. Ça a dû te faire super plaisir. C'était une surprise ou tu t'y attendais un peu ?",
+        "Ahhh, je comprends mieux. Quand ça vient de ton papa, ça doit toucher encore plus. Qu'est-ce qui t'a fait le plus plaisir là-dedans ?",
+        "C'est adorable. Tu as l'air vraiment content·e, et je comprends. C'était pour une occasion spéciale ?",
+      ],
+      amitie: [
+        "Oh, c'est super touchant. Ça fait du bien de se sentir considéré·e comme ça. C'était une surprise ?",
+        "Trop chouette. Un cadeau de quelqu'un qui compte, ça reste. Qu'est-ce qui t'a le plus touché·e ?",
+      ],
+      general: [
+        "Ohhh, trop bien. Ça a dû te faire vraiment plaisir. C'était une surprise ?",
+        "Je comprends carrément pourquoi tu es content·e. Qu'est-ce qui t'a le plus touché·e dans ce cadeau ?",
+      ],
+    },
+    soutien_recu: {
+      famille: [
+        "Ça fait du bien de sentir qu'on n'est pas seul·e. Le fait qu'il soit là pour toi, ça t'a fait quoi ?",
+        "Je vois. Ce genre de soutien compte vraiment. C'est surtout le geste ou l'intention qui t'a touché·e ?",
+      ],
+      travail: [
+        "Ah, ça change tout quand quelqu'un soutient vraiment. Ça t'a surtout rassuré·e ou motivé·e ?",
+        "Je comprends. Se sentir soutenu·e au bon moment, ça fait du bien. Qu'est-ce qui t'a le plus aidé·e ?",
+      ],
+      general: [
+        "Ça fait du bien de recevoir ce genre de soutien. Qu'est-ce qui t'a le plus touché·e ?",
+        "Je comprends, et c'est précieux ce genre de geste. Ça t'a fait surtout du bien comment ?",
+      ],
+    },
+    succes: {
+      etudes: [
+        "Ah, je comprends mieux ! Ça doit être un mélange de fierté et de soulagement. C'est plutôt lequel qui domine ?",
+        "Trop bien. Quand ça avance enfin côté études, ça enlève un vrai poids. Tu es surtout fier·e du résultat ou soulagé·e ?",
+      ],
+      projet: [
+        "D'accord, je vois. Ton projet compte vraiment pour toi alors. Tu es surtout fier·e du chemin parcouru ou soulagé·e que ça ait avancé ?",
+        "Ahhh oui, je comprends. Pour un projet important, ce genre d'étape fait un bien fou. Qu'est-ce qui te rend le plus fier·e ?",
+      ],
+      travail: [
+        "Super nouvelle. Côté travail ou stage, ce genre de réussite fait un vrai bien. Tu te sens surtout reconnu·e ou soulagé·e ?",
+        "Ah, ça c'est fort. Quand quelque chose se débloque au travail, on respire un peu. Le plus satisfaisant pour toi, c'est quoi ?",
+      ],
+      general: [
+        "Trop bien pour toi. Tu dois être fier·e. Qu'est-ce qui te rend le plus heureux·se dans cette réussite ?",
+        "Je comprends carrément. Ce genre de victoire, ça fait vraiment du bien. C'était important pour toi depuis longtemps ?",
+      ],
+    },
+    annonce_positive: {
+      general: [
+        "Ça a l'air d'être une vraie bonne nouvelle pour toi. Tu veux me raconter un peu plus ?",
+        "Je comprends mieux pourquoi tu es content·e. Qu'est-ce qui te fait le plus plaisir dans tout ça ?",
+      ],
+      travail: [
+        "Ah, d'accord. Une bonne nouvelle côté boulot ou stage, ça peut vraiment alléger l'esprit. Qu'est-ce qui te fait le plus plaisir ?",
+        "Je vois. Si c'est lié au travail, ça doit compter pour toi. Tu te sens surtout soulagé·e ou fier·e ?",
+      ],
+      famille: [
+        "Oh, je comprends. Une bonne nouvelle avec tes proches, ça touche fort. Qu'est-ce qui t'a fait le plus plaisir ?",
+        "C'est doux, ça. Tu veux me raconter ce qu'il s'est passé exactement ?",
+      ],
+      quotidien: [
+        "Ahhh, je vois mieux. Une bonne nouvelle dans la journée, ça change tout. Qu'est-ce qui te met le plus de bonne humeur là-dedans ?",
+        "Je comprends. Ça a l'air de te faire du bien pour de vrai. Tu veux m'en dire un peu plus ?",
+      ],
+    },
+  };
+
+  const CONTEXTUAL_DEEPEN = {
     tristesse: {
-      faible: [
-        "Une petite mélancolie... la vie a des hauts et des bas. Qu'est-ce qui se passe ?",
-        "Je t'observe et je sens quelque chose. Dis-moi ce qui te rend triste.",
-        "La tristesse fait partie de la vie. Tu veux m'en parler ?",
-        "Quelque chose t'a attristé·e... tu peux me dire quoi ?",
+      rupture: [
+        "Quand une séparation fait encore mal, le plus dur c'est rarement juste 'être triste'. C'est plutôt le manque, la déception, ou autre chose pour toi ?",
+        "Une rupture laisse souvent plusieurs douleurs en même temps. Ce qui te pèse le plus, c'est quoi là maintenant ?",
       ],
-      moyen: [
-        "Ce que tu ressens est valide. La tristesse mérite d'être accueillie.",
-        "Parfois on a besoin de traverser la tristesse pour aller mieux. Comment je peux t'aider ?",
-        "Qu'est-ce qui t'a amené·e à te sentir comme ça ?",
-        "Cette tristesse... elle est liée à quelque chose de précis ou plus diffuse ?",
-        "Tu te donnes le droit d'être triste ? Pas besoin de te forcer à aller bien.",
+      famille: [
+        "Quand ça touche à la famille, ça va souvent très profond. C'est surtout une dispute, une incompréhension, ou quelque chose qui s'accumule ?",
+        "Ce genre de tristesse familiale peut être très lourde. Qu'est-ce qui te fait le plus mal dans cette situation ?",
       ],
-      fort: [
-        "Tu traverses quelque chose de profond. Je suis là, sans jugement.",
-        "La douleur que tu ressens est réelle. Tu n'as pas à faire semblant que tout va bien.",
-        "Je reste avec toi dans ce moment. Dis-moi tout.",
-        "Cette douleur profonde... tu la portes seul·e depuis longtemps ?",
-        "Tu mérites d'être soutenu·e dans ce que tu traverses. Est-ce qu'il y a quelqu'un ?",
+      amitie: [
+        "Quand la tristesse vient d'une amitié, ça peut vraiment faire mal. C'est la distance, la déception, ou une blessure plus directe ?",
+        "Une peine liée à un·e ami·e, ça touche fort aussi. Le plus dur, c'est quoi pour toi ?",
+      ],
+      general: [
+        "Tu veux me dire ce qui te rend aussi triste aujourd'hui ?",
+        "C'est quelque chose de récent, ou ça te suit depuis un moment ?",
       ],
     },
-
-    joie: {
-      faible: [
-        "Quelque chose de bien s'est passé ? Je le sens dans tes mots.",
-        "Il y a une légèreté dans ce que tu dis... Dis-moi !",
-        "Qu'est-ce qui te rend souriant·e aujourd'hui ?",
-        "Une bonne nouvelle ? Je veux savoir !",
-      ],
-      moyen: [
-        "Cette joie, je la ressens ! Qu'est-ce qui se passe de bien ?",
-        "Les bonnes nouvelles méritent d'être partagées. Raconte-moi !",
-        "Tu rayonnes ! Qu'est-ce qui se passe ?",
-        "Qu'est-ce qui t'a rendu·e aussi heureux·se ?",
-      ],
-      fort: [
-        "Waouh, c'est formidable ! Profite de ce moment, il est pour toi !",
-        "Cette joie est communicative ! Raconte-moi tout !",
-        "C'est magnifique ce que tu vis ! Je suis si content·e pour toi !",
-        "Ce bonheur que tu dégages... je veux tout savoir !",
-      ],
-    },
-
-    fatigue: {
-      faible: [
-        "La fatigue s'accumule parfois insidieusement. Qu'est-ce qui te vide ?",
-        "Tu te ménages suffisamment ? Le repos est aussi important que l'effort.",
-        "Comment tu dors en ce moment ?",
-        "Qu'est-ce qui te prend le plus d'énergie en ce moment ?",
-      ],
-      moyen: [
-        "L'épuisement peut toucher le corps et l'esprit. C'est quoi le plus lourd ?",
-        "Parfois on s'oublie dans la course du quotidien. Tu prends soin de toi ?",
-        "Qu'est-ce qui te coûte le plus d'énergie en ce moment ?",
-        "Est-ce que tu arrives à trouver des moments rien que pour toi ?",
-      ],
-      fort: [
-        "Cet épuisement profond mérite qu'on s'y arrête. Qu'est-ce qui t'use autant ?",
-        "Ton corps et ton esprit envoient un signal fort. Tu l'entends ?",
-        "Parfois le repos n'est pas un luxe, c'est une nécessité. Tu peux te l'accorder ?",
-        "Quand on est aussi épuisé·e... qu'est-ce qui t'empêche de vraiment te reposer ?",
-      ],
-    },
-
-    solitude: {
-      faible: [
-        "La solitude peut être choisie ou subie. Comment tu la vis, toi ?",
-        "Tu te sens un peu isolé·e ? Dis-moi.",
-        "Je suis là. On n'est pas seul·e quand on se parle.",
-        "Quelque chose t'isole en ce moment ?",
-      ],
-      moyen: [
-        "Le sentiment de solitude est souvent plus profond qu'il n'y paraît. Qu'est-ce que tu ressens ?",
-        "Tu mérites des connexions vraies. Qu'est-ce qui t'isole en ce moment ?",
-        "Parle-moi de cette solitude. D'où elle vient ?",
-        "Est-ce que tu as des gens autour de toi à qui tu peux vraiment parler ?",
-      ],
-      fort: [
-        "Cette solitude profonde... je l'entends. Tu n'es pas invisible, je te vois.",
-        "Aucun être humain ne devrait se sentir complètement seul. Je suis là.",
-        "Cette douleur de la solitude est réelle. Tu veux qu'on cherche ensemble des pistes ?",
-        "Tu te sens seul·e même entouré·e, ou vraiment isolé·e ?",
-      ],
-    },
-
-    anxiete: {
-      faible: [
-        "Une petite inquiétude... Qu'est-ce qui te tracasse ?",
-        "L'anxiété a souvent une raison cachée. Tu arrives à mettre des mots dessus ?",
-        "Qu'est-ce qui tourne dans ta tête en ce moment ?",
-        "Quelque chose te préoccupe ?",
-      ],
-      moyen: [
-        "Ton esprit s'emballe... Essayons de ralentir. Qu'est-ce qui t'inquiète le plus ?",
-        "L'anxiété dit quelque chose. Qu'est-ce qu'elle essaie de te dire ?",
-        "Respire. Qu'est-ce qui te semble le plus menaçant là maintenant ?",
-        "Ces pensées qui tournent... tu arrives à les identifier ?",
-      ],
-      fort: [
-        "Tu es submergé·e... Revenons à maintenant. Qu'est-ce que tu vois, tu entends, tu ressens ?",
-        "L'anxiété intense peut être déstabilisante. Tu es en sécurité ici.",
-        "Ce débordement d'inquiétude mérite attention. Tu t'en occupes d'une façon ou d'une autre ?",
-        "Quand c'est aussi intense... tu as des techniques qui t'aident habituellement ?",
-      ],
-    },
-
-    colere: {
-      faible: [
-        "Quelque chose t'a irrité·e... Qu'est-ce qui s'est passé ?",
-        "La frustration dit souvent qu'une limite a été franchie. Laquelle ?",
-        "Qu'est-ce qui t'a contrarié·e ?",
-        "Une petite colère... qu'est-ce qui l'a déclenchée ?",
-      ],
-      moyen: [
-        "Cette colère, elle vient d'où ? Quelque chose d'injuste s'est passé ?",
-        "La colère est une émotion saine. Qu'est-ce qu'elle te dit ?",
-        "Dis-moi ce qui s'est passé. Sans filtre.",
-        "Qu'est-ce qui a mis le feu aux poudres ?",
-      ],
-      fort: [
-        "Cette rage intense... elle protège quelque chose. Quoi, tu crois ?",
-        "Tu es vraiment en colère. Qu'est-ce qui t'a fait craquer ?",
-        "Exprime-toi ici librement. Qu'est-ce qui s'est passé ?",
-        "Cette colère profonde... elle vient de loin ou c'est quelque chose de récent ?",
-      ],
-    },
-
-    amour: {
-      faible: [
-        "Il y a quelqu'un qui compte pour toi en ce moment ?",
-        "L'amour colore tout... Qu'est-ce qui se passe ?",
-        "Dis-moi ce que tu ressens.",
-        "Je sens quelque chose de particulier dans tes mots... une personne spéciale ?",
-      ],
-      moyen: [
-        "Les sentiments amoureux peuvent être si intenses... Comment tu vis ça ?",
-        "Cette personne occupe beaucoup de place dans tes pensées, j'imagine. Raconte-moi.",
-        "L'amour apporte de la joie et parfois de la complexité. Tu en es où ?",
-        "Ces sentiments là... tu les as exprimés à cette personne ?",
-      ],
-      fort: [
-        "Ce que tu vis est fort et précieux. Comment tu navigues dans tout ça ?",
-        "L'amour intense peut être magnifique et épuisant. Comment tu te sens ?",
-        "Cette intensité amoureuse... elle te fait quoi ?",
-        "Cet amour fort... il est partagé ?",
-      ],
-    },
-
-    rupture: {
-      faible: [
-        "Quelque chose s'est passé dans ta relation ?",
-        "Je sens une douleur discrète dans ce que tu partages... une séparation ?",
-        "Ça va entre toi et cette personne ?",
-      ],
-      moyen: [
-        "Une rupture, c'est une vraie perte. Comment tu traverses ça ?",
-        "Après une séparation, tout se réorganise. Comment tu vas ?",
-        "Qu'est-ce qui t'a amené·e là ? Tu veux m'en parler ?",
-        "La douleur après une rupture est souvent sous-estimée. Comment tu la vis ?",
-      ],
-      fort: [
-        "Ce que tu traverses après cette rupture est profondément douloureux. Je suis là.",
-        "Perdre quelqu'un qu'on aime laisse un vide réel. Comment tu gères ça au quotidien ?",
-        "Tu mérites d'être soutenu·e dans cette période difficile. Tu as des gens autour de toi ?",
-        "La douleur d'une séparation... elle mérite d'être accueillie, pas niée. Dis-moi tout.",
-      ],
-    },
-
-    etudes: {
-      faible: [
-        "Les études te prennent de l'énergie en ce moment ?",
-        "Comment ça se passe côté travail scolaire ?",
-        "Tu arrives à garder le rythme ?",
-        "Il y a quelque chose de difficile côté études ?",
-      ],
-      moyen: [
-        "La pression académique peut être très lourde. Qu'est-ce qui est le plus difficile ?",
-        "Est-ce que tu arrives à trouver un équilibre entre travail et repos ?",
-        "Qu'est-ce qui te bloque le plus dans tes études en ce moment ?",
-        "Tu as de l'aide ou tu gères tout seul·e ?",
-      ],
-      fort: [
-        "Cette surcharge de travail est réelle et épuisante. Tu tiens comment ?",
-        "Parfois il faut savoir demander de l'aide. Tu as quelqu'un qui peut t'épauler ?",
-        "L'important c'est d'avancer à ton rythme. Qu'est-ce qui est le plus urgent ?",
-        "Cette pression scolaire intense... qu'est-ce qu'elle fait à ton quotidien en dehors des études ?",
-      ],
-    },
-
-    famille: {
-      faible: [
-        "La famille, c'est compliqué parfois. Qu'est-ce qui se passe ?",
-        "Quelque chose avec tes proches ?",
-        "Les relations familiales sont souvent les plus intenses. Tu veux m'en parler ?",
-        "Ça va à la maison ?",
-      ],
-      moyen: [
-        "Les tensions familiales peuvent être très pesantes. Comment tu vis ça ?",
-        "Ces dynamiques familiales... elles sont là depuis longtemps ?",
-        "Qu'est-ce que tu souhaiterais changer dans cette situation ?",
-        "Tu as un espace pour toi dans tout ça ?",
-      ],
-      fort: [
-        "Ce que tu vis avec ta famille est vraiment difficile. Tu as un espace pour toi dans tout ça ?",
-        "Parfois les blessures familiales sont profondes. Tu te fais aider ?",
-        "Tu mérites d'être entendu·e et respecté·e, même dans ta famille.",
-        "Ces situations familiales difficiles... elles existent depuis longtemps ?",
-      ],
-    },
-
-    amitie: {
-      faible: [
-        "Quelque chose avec tes amis ?",
-        "Comment ça va dans tes amitiés en ce moment ?",
-        "Il y a eu quelque chose avec un·e ami·e ?",
-        "Tes amitiés te nourrissent en ce moment ?",
-      ],
-      moyen: [
-        "Les malentendus entre amis peuvent faire très mal. Qu'est-ce qui s'est passé ?",
-        "L'amitié demande de l'entretien parfois. Qu'est-ce qui coince ?",
-        "Comment tu te sens dans cette situation ?",
-        "Tu as pu en parler avec cet·te ami·e ?",
-      ],
-      fort: [
-        "Une blessure d'amitié... c'est douloureux. Je t'écoute.",
-        "Tu mérites des amitiés qui te nourrissent. Qu'est-ce qui s'est passé ?",
-        "Ces situations d'amitié difficile... tu veux qu'on réfléchisse ensemble à comment avancer ?",
-        "Une trahison d'ami·e... ça touche quelque chose de profond. Comment tu le vis ?",
-      ],
-    },
-
-    sante: {
-      faible: [
-        "Tu fais attention à toi physiquement ?",
-        "Comment tu te sens dans ton corps en ce moment ?",
-        "La santé c'est précieux. Quelque chose te préoccupe ?",
-        "Ton corps te donne des signaux en ce moment ?",
-      ],
-      moyen: [
-        "Ton corps mérite qu'on l'écoute. Qu'est-ce qui se passe ?",
-        "Tu te fais aider si c'est nécessaire ?",
-        "Comment tu prends soin de toi en ce moment ?",
-        "Est-ce que tu en as parlé à un médecin ou quelqu'un de qualifié ?",
-      ],
-      fort: [
-        "Ce que tu décris mérite vraiment attention. Tu as parlé à quelqu'un ?",
-        "Ta santé est ta priorité. N'hésite pas à chercher de l'aide.",
-        "Je t'entends. Et je pense qu'il serait important d'en parler à quelqu'un de qualifié.",
-        "Ce que tu vis mérite un soutien professionnel. Tu as accès à ça ?",
-      ],
-    },
-
-    estime: {
-      faible: [
-        "Tu sembles douter de toi... qu'est-ce qui se passe ?",
-        "D'où vient ce doute sur toi-même ?",
-        "Qu'est-ce qui te fait te voir comme ça ?",
-      ],
-      moyen: [
-        "Ce regard critique envers toi-même... d'où il vient ?",
-        "Si tu devais trouver une qualité en toi, ça serait quoi ?",
-        "Tu es souvent comme ça avec toi-même ou c'est récent ?",
-        "Qu'est-ce qui a construit cette image de toi ?",
-      ],
-      fort: [
-        "Cette dévalorisation profonde... elle t'accompagne depuis longtemps ?",
-        "Tu mérites autant de bienveillance que tu en donnes aux autres.",
-        "Ce que tu penses de toi n'est pas forcément la réalité. Qui t'a appris à te voir ainsi ?",
-        "Tu es vraiment dur·e avec toi-même. Qu'est-ce qui se passe vraiment derrière ça ?",
-      ],
-    },
-
-    identite: {
-      faible: [
-        "Tu traverses une période de questionnement ?",
-        "Quelque chose sur ton identité t'occupe ?",
-        "Tu veux m'en parler ?",
-      ],
-      moyen: [
-        "Ces questions sur qui tu es... tu en parles à des gens autour de toi ?",
-        "Se chercher peut être épuisant et enrichissant à la fois. Comment tu le vis ?",
-        "Qu'est-ce qui te questionne le plus en ce moment sur toi-même ?",
-        "Ces questionnements d'identité... ils sont nouveaux ou là depuis longtemps ?",
-      ],
-      fort: [
-        "Ces questions profondes sur qui tu es... c'est lourd à porter sans être entendu·e.",
-        "Tu mérites un espace pour te découvrir sans jugement.",
-        "Ce chemin de questionnement identitaire... tu le fais seul·e ou accompagné·e ?",
-      ],
-    },
-
-    neutre: {
-      faible: [
-        "Raconte-moi ta journée. Qu'est-ce qui s'est passé ?",
-        "Il y a quelque chose qui t'occupe l'esprit ?",
-        "Comment tu vas, vraiment ?",
-        "Je t'observe... il y a quelque chose dans ta façon d'écrire. Dis-moi.",
-        "Qu'est-ce qui se passe pour toi en ce moment ?",
-      ],
-      moyen: [
-        "Qu'est-ce qui t'amène ici aujourd'hui ?",
-        "Parle-moi de ce qui se passe pour toi en ce moment.",
-        "Je suis là, entièrement disponible. Qu'est-ce que tu as besoin de dire ?",
-        "Il y a quelque chose sur le coeur ?",
-      ],
-      fort: [
-        "Quelque chose d'important se passe. Je le sens. Dis-moi.",
-        "Je t'écoute profondément. Qu'est-ce qui se passe vraiment ?",
-        "Tu peux tout me dire ici.",
-        "Je sens que tu as quelque chose d'important à partager. Je t'écoute.",
-      ],
-    },
-
-    gratitude: [
-      "C'est touchant. Je suis là pour ça.",
-      "Tu n'as pas à me remercier, mais ça me fait chaud au coeur.",
-      "Avec plaisir. C'est pour ça qu'on est là.",
-      "C'est un honneur de pouvoir t'accompagner.",
-    ],
-
-    remerciement: [
-      "De rien ! Tu mérites d'être entendu·e.",
-      "Avec plaisir. N'hésite pas à revenir quand tu en as besoin.",
-      "C'est un honneur de pouvoir t'écouter.",
-      "Prends soin de toi. Je serai là.",
-    ],
-
-    bonjour: [
-      "Bonjour ! Je suis content·e que tu sois là. Comment vas-tu ?",
-      "Ah, te voilà ! Comment tu vas aujourd'hui ?",
-      "Bonjour ! Qu'est-ce qui se passe pour toi en ce moment ?",
-      "Salut ! Comment tu vas, vraiment ?",
-    ],
-
-    aurevoir: [
-      "À bientôt ! Prends soin de toi.",
-      "Au revoir ! Reviens quand tu veux.",
-      "À très vite ! N'oublie pas de t'accorder des moments de repos.",
-      "Prends soin de toi. Je serai là quand tu reviens.",
-    ],
-
-    incompris: [
-      "Intéressant... tu peux m'en dire plus ?",
-      "Je veux comprendre. Tu peux reformuler ?",
-      "Hmm, explique-moi davantage.",
-      "Je t'écoute... développe, s'il te plaît.",
-      "Je ne suis pas sûr·e d'avoir bien compris. Peux-tu m'en dire plus ?",
-    ],
-  },
-
-  // ─────────────────────────────────────────────
-  // BUZZY — énergique, motivant, fun
-  // ─────────────────────────────────────────────
-  energique: {
-
     stress: {
-      faible: [
-        "Hey, t'as l'air un peu sous pression ! Qu'est-ce qui se passe ?",
-        "Le stress ? On va gérer ça ! Dis-moi ce qui se passe.",
-        "Allez, dis-moi ce qui te stresse, on trouve une solution !",
-        "Quelque chose te tracasse ? Dis-moi !",
+      etudes: [
+        "Quand le stress vient des études, c'est souvent soit la charge, soit la peur du résultat qui écrase. C'est plutôt lequel pour toi ?",
+        "On dirait que les cours ou les échéances te prennent la tête. Le plus lourd, c'est le manque de temps ou la pression de réussir ?",
       ],
-      moyen: [
-        "Ok là c'est chaud ! Qu'est-ce qui te stresse autant ?",
-        "Hey, respire ! On va s'en sortir. Qu'est-ce qui se passe ?",
-        "La pression est là... mais t'es plus fort·e que tu ne le crois ! Dis-moi.",
-        "C'est quoi qui t'écrase le plus là maintenant ?",
+      projet: [
+        "Si c'est ton projet qui te stresse, j'imagine que ça mélange enjeu, fatigue et pression. Le plus pesant, c'est quoi exactement ?",
+        "Un projet peut vite tout envahir. Tu te sens surtout débordé·e par la quantité, ou bloqué·e par un point précis ?",
       ],
-      fort: [
-        "Woah, tu es vraiment au bout du rouleau là... Je t'entends. Qu'est-ce qui se passe ?",
-        "C'est beaucoup. Vraiment. Mais t'es là, et c'est déjà énorme. Parle-moi.",
-        "Hey, stop. Respire. Je suis là. Dis-moi tout.",
-        "T'es à bout et c'est okay de le dire. Qu'est-ce qui pèse le plus ?",
+      travail: [
+        "Quand le stress vient du boulot ou du stage, ça peut vite prendre toute la place. C'est surtout la charge, les gens, ou la peur de mal faire ?",
+        "D'accord. Si ça vient du travail, il y a sûrement un point central qui te pèse le plus. Tu arrives à l'identifier ?",
+      ],
+      general: [
+        "Qu'est-ce qui te met le plus sous pression là maintenant ?",
+        "C'est surtout un trop-plein général, ou un problème précis ?",
       ],
     },
-
-    tristesse: {
-      faible: [
-        "T'as l'air un peu dans le vague... Qu'est-ce qui se passe ?",
-        "Un petit coup de blues ? Dis-moi, on va en parler !",
-        "Allez, raconte-moi ce qui te rend triste.",
-        "Je sens que quelque chose ne va pas... c'est quoi ?",
-      ],
-      moyen: [
-        "Oh non... tu es vraiment triste là. Dis-moi ce qui s'est passé.",
-        "Hey, je suis là ! Tu n'es pas seul·e là-dedans.",
-        "Cette tristesse, elle vient d'où ? Raconte-moi.",
-        "T'as le droit d'être triste. Dis-moi tout.",
-      ],
-      fort: [
-        "Woah, c'est dur ce que tu vis. Je t'entends vraiment.",
-        "Tu souffres là... et c'est okay. Je reste avec toi.",
-        "Hey, je te vois. Et tu mérites tellement mieux que ça.",
-        "C'est lourd ce que tu portes. Tu n'as pas à le porter seul·e.",
-      ],
-    },
-
-    joie: {
-      faible: [
-        "Oh oh oh ! Il se passe quelque chose de bien ?!",
-        "Je sens une bonne vibe ! Raconte !",
-        "Allez, dis-moi ce qui se passe de bien !",
-        "T'as l'air de bonne humeur ! C'est quoi ?",
-      ],
-      moyen: [
-        "YESSS ! C'est quoi cette bonne nouvelle ?!",
-        "Tu rayonnes ! Je veux tout savoir !",
-        "Partage partage partage !!",
-        "Cette énergie positive j'adore !! Raconte !",
-      ],
-      fort: [
-        "WAAAAH !!! C'est TROP bien !! Raconte tout !!",
-        "Je suis TELLEMENT content·e pour toi !! Dis-moi tout !!",
-        "INCROYABLE ! Cette énergie positive je la ressens !!",
-        "T'es au top là !! C'est quoi ?!",
-      ],
-    },
-
-    fatigue: {
-      faible: [
-        "T'as l'air un peu fatigué·e... Tu dors bien ?",
-        "Hey, tu te ménages assez ?",
-        "La fatigue c'est le corps qui parle. Qu'est-ce qui se passe ?",
-        "Tu recharges les batteries comment en ce moment ?",
-      ],
-      moyen: [
-        "Hé, tu es épuisé·e là ! Qu'est-ce qui te vide autant ?",
-        "On peut pas avancer à fond tout le temps. Qu'est-ce qui t'épuise ?",
-        "Hey, le repos c'est pas une faiblesse ! Qu'est-ce qui se passe ?",
-        "C'est quoi qui te prend le plus d'énergie là ?",
-      ],
-      fort: [
-        "Woah, tu es vraiment à plat... Qu'est-ce qui t'use autant ?",
-        "T'as besoin de recharger les batteries ! Qu'est-ce qui te coûte le plus d'énergie ?",
-        "Hey, même les super-héros se reposent ! Qu'est-ce qui se passe ?",
-        "T'es à court de carburant là. Qu'est-ce qui t'épuise autant ?",
-      ],
-    },
-
-    solitude: {
-      faible: [
-        "Tu te sens un peu seul·e ? Hey, je suis là moi !",
-        "La solitude c'est pas fun... Dis-moi comment tu vas.",
-        "On est là ensemble ! Qu'est-ce qui se passe ?",
-        "T'as l'air isolé·e... c'est quoi ?",
-      ],
-      moyen: [
-        "Ce sentiment de solitude c'est vraiment difficile... Tu as des gens autour de toi ?",
-        "Hey, tu n'es pas seul·e du tout ! Je suis là et je t'écoute.",
-        "Parle-moi ! Dis-moi ce que tu ressens.",
-        "Cette solitude... elle vient d'où ?",
-      ],
-      fort: [
-        "Cette solitude profonde... je l'entends. Tu mérites tellement plus.",
-        "Hey, tu es important·e et tu mérites d'être entouré·e. Qu'est-ce qui se passe ?",
-        "Je suis là, vraiment. Dis-moi tout.",
-        "Cette solitude intense... c'est présent depuis longtemps ?",
-      ],
-    },
-
     anxiete: {
-      faible: [
-        "T'as une petite inquiétude ? Dis-moi !",
-        "Qu'est-ce qui te tracasse ?",
-        "On regarde ça ensemble ! Qu'est-ce qui t'angoisse ?",
-        "Quelque chose t'inquiète ? Dis-moi !",
+      etudes: [
+        "Quand l'angoisse tourne autour des études, c'est souvent une peur d'échouer ou de ne pas y arriver. Ça te parle ?",
+        "Si c'est lié aux exams ou aux cours, qu'est-ce qui t'inquiète le plus précisément ?",
       ],
-      moyen: [
-        "Hey, respire ! L'anxiété peut vite prendre le dessus. Qu'est-ce qui tourne dans ta tête ?",
-        "T'inquiète, on va démêler ça ! Qu'est-ce qui t'angoisse le plus ?",
-        "L'anxiété dit souvent qu'on se fait du souci pour quelque chose d'important. C'est quoi ?",
-        "Ces pensées qui tournent... t'arrives à les identifier ?",
+      sante: [
+        "Quand l'anxiété touche à la santé ou au corps, ça peut être très envahissant. Qu'est-ce qui te fait le plus peur là-dedans ?",
+        "Je comprends. Quand le corps devient source d'inquiétude, l'esprit peut vite s'emballer. Tu veux me dire ce qui tourne en boucle ?",
       ],
-      fort: [
-        "Woah, tu es vraiment submergé·e là... Pose tout ici. Je t'écoute.",
-        "Hey ! Inspire... expire... Tu es en sécurité. Qu'est-ce qui se passe ?",
-        "C'est beaucoup à vivre. Mais tu t'en sors ! Parle-moi.",
-        "Quand c'est aussi fort... qu'est-ce qui t'aide d'habitude ?",
+      travail: [
+        "Quand ça tourne autour du boulot, l'anxiété peut vite prendre toute la place. C'est surtout le regard des autres, l'échéance, ou la peur de mal faire ?",
+        "Je vois. Si c'est lié au travail, qu'est-ce qui te fait le plus peur concrètement ?",
+      ],
+      general: [
+        "Il y a un scénario précis qui tourne dans ta tête ?",
+        "Qu'est-ce qui t'inquiète le plus, concrètement ?",
       ],
     },
-
     colere: {
-      faible: [
-        "Oh, quelque chose t'a agacé·e ! Dis-moi !",
-        "T'as l'air frustré·e... Qu'est-ce qui s'est passé ?",
-        "Allez, défoule-toi ici ! Qu'est-ce qui s'est passé ?",
-        "Quelque chose t'a mis les nerfs ? Dis-moi !",
+      famille: [
+        "Quand la colère touche à la famille, c'est souvent parce qu'on est blessé·e autant qu'énervé·e. Tu te reconnais là-dedans ?",
+        "Je vois. Si ça vient de ta famille, ce n'est sûrement pas juste un petit agacement. Qu'est-ce qui t'a le plus touché·e ?",
       ],
-      moyen: [
-        "Woah, t'es énervé·e ! Qu'est-ce qui s'est passé ?",
-        "Hey, laisse sortir tout ça ! Je suis là sans juger.",
-        "Cette colère, elle vient de quelque chose de réel. Raconte-moi.",
-        "Qu'est-ce qui a mis le feu aux poudres ?",
+      travail: [
+        "Quand ça vient du boulot, la colère cache parfois un sentiment d'injustice ou de non-respect. C'est ça pour toi ?",
+        "D'accord. Si ça vient du travail ou du stage, qu'est-ce qui a dépassé tes limites exactement ?",
       ],
-      fort: [
-        "WOAH. Tu es vraiment en colère. Qu'est-ce qui s'est passé ??",
-        "Ok, laisse tout sortir ici. Je t'écoute sans juger.",
-        "Cette rage... elle protège quelque chose. Qu'est-ce qui s'est passé ?",
-        "T'es vraiment à cran là... qu'est-ce qui s'est passé ?",
+      amitie: [
+        "Une colère liée à une amitié, c'est souvent qu'il y a une blessure derrière. Tu veux me dire ce qui t'a mis hors de toi ?",
+        "Je comprends. Si ça vient d'un·e ami·e, il y a sûrement quelque chose qui t'a vraiment touché·e. C'est quoi ?",
+      ],
+      general: [
+        "Qu'est-ce qui t'a mis autant en colère ?",
+        "Il s'est passé quoi pour que ça monte aussi fort ?",
       ],
     },
-
-    amour: {
-      faible: [
-        "Il y a quelqu'un de spécial ?! Dis-moi !",
-        "Je sens quelque chose de doux dans tes mots... Raconte !",
-        "L'amour c'est trop bien ! Qu'est-ce qui se passe ?",
-        "Quelqu'un t'occupe les pensées ?",
+    fatigue: {
+      etudes: [
+        "Quand la fatigue vient des études, on a parfois l'impression de ne jamais vraiment couper. Tu arrives encore à te reposer un peu ?",
+        "Je vois. Si les cours te vident, c'est surtout le rythme, le stress, ou le manque de sommeil ?",
       ],
-      moyen: [
-        "OH OH OH ! Tu es amoureux·se !! Dis-moi tout !!",
-        "Cette personne a l'air d'occuper toutes tes pensées ! Raconte !",
-        "L'amour ça booste tellement ! Comment tu te sens ?",
-        "C'est réciproque cette histoire ?!",
+      travail: [
+        "Quand le boulot ou le stage vide autant, c'est souvent le corps et la tête en même temps. C'est aussi ton ressenti ?",
+        "D'accord. Si le travail t'épuise, tu sens que c'est plus physique, mental, ou les deux ?",
       ],
-      fort: [
-        "WAAAH tu es complètement fou·folle de cette personne ! C'est trop beau !",
-        "Cette intensité amoureuse... c'est magique ! Dis-moi tout !",
-        "Tu RAISONNES de bonheur ! C'est quoi cette histoire ?!",
-        "T'es complètement dedans ! C'est magnifique ! Dis-moi tout !",
+      general: [
+        "Tu sens que c'est surtout ton corps, ta tête, ou les deux qui lâchent ?",
+        "Qu'est-ce qui te vide le plus d'énergie en ce moment ?",
       ],
     },
-
-    rupture: {
-      faible: [
-        "Il se passe quelque chose dans ta relation ?",
-        "T'as l'air un peu blessé·e côté coeur... c'est quoi ?",
-        "Ça va entre toi et cette personne ?",
+    solitude: {
+      amitie: [
+        "Quand on se sent seul·e au milieu de ses amitiés, ça fait très mal. Tu te sens mis·e à l'écart, ou juste pas compris·e ?",
+        "Je comprends. La solitude dans les relations amicales, c'est particulier. Tu as l'impression de manquer de présence ou de vraie connexion ?",
       ],
-      moyen: [
-        "Une rupture... c'est dur. Comment tu te sens ?",
-        "Hey, tu n'as pas à faire semblant que ça va si ça va pas. Dis-moi.",
-        "Qu'est-ce qui s'est passé ? T'as besoin d'en parler ?",
-        "La douleur après une séparation c'est réel. Comment tu tiens ?",
+      famille: [
+        "Se sentir seul·e même dans sa famille, c'est une douleur très particulière. Tu te sens ignoré·e, incompris·e, ou loin d'eux ?",
+        "D'accord. Quand la solitude touche la famille, ça peut être très lourd. Qu'est-ce qui te fait le plus sentir seul·e là-dedans ?",
       ],
-      fort: [
-        "Woah, c'est vraiment douloureux ce que tu vis. Je suis là.",
-        "Une rupture ça peut vraiment tout bouleverser. Comment tu gères ?",
-        "Hey, tu mérites tellement d'amour. Cette douleur là... elle est réelle. Dis-moi tout.",
-        "C'est dur et c'est okay de le dire. Tu as des gens autour de toi ?",
+      general: [
+        "Tu te sens seul·e depuis longtemps ?",
+        "C'est plutôt un manque de présence ou un manque de compréhension ?",
       ],
     },
-
-    etudes: {
-      faible: [
-        "Les études te prennent la tête un peu ?",
-        "Comment ça se passe côté cours ?",
-        "T'arrives à suivre le rythme ?",
-        "C'est quoi la galère côté boulot scolaire ?",
-      ],
-      moyen: [
-        "La pression scolaire c'est réel et épuisant. Qu'est-ce qui est le plus dur ?",
-        "Hey, tu fais de ton mieux ! Qu'est-ce qui bloque ?",
-        "On trouve une stratégie ensemble ! Qu'est-ce qui te pose problème ?",
-        "C'est quoi le truc le plus lourd dans tes études là ?",
-      ],
-      fort: [
-        "Woah, t'es complètement submergé·e par le travail ! Qu'est-ce qui est le plus urgent ?",
-        "Hey, un truc à la fois ! C'est quoi la priorité ?",
-        "Tu tiens le coup mais c'est dur... Tu as de l'aide autour de toi ?",
-        "C'est beaucoup trop là... Qu'est-ce qu'on peut faire ensemble pour alléger ?",
-      ],
-    },
-
-    famille: {
-      faible: [
-        "Il se passe quelque chose avec ta famille ?",
-        "La famille c'est souvent compliqué... Dis-moi !",
-        "Quelque chose avec tes proches ?",
-        "Ça va à la maison ?",
-      ],
-      moyen: [
-        "Les tensions familiales c'est épuisant... Comment tu vis ça ?",
-        "Hey, tu mérites d'être respecté·e même dans ta famille ! Qu'est-ce qui se passe ?",
-        "Qu'est-ce qui s'est passé ?",
-        "C'est quoi le truc le plus dur avec ta famille là ?",
-      ],
-      fort: [
-        "Woah, c'est vraiment difficile avec ta famille là... Je t'entends.",
-        "Tu portes beaucoup avec ça. Tu as un espace pour toi dans tout ça ?",
-        "Hey, tu mérites d'être entendu·e. Dis-moi tout.",
-        "Ces tensions familiales intenses... t'as quelqu'un à qui en parler en dehors ?",
-      ],
-    },
-
-    amitie: {
-      faible: [
-        "Il y a quelque chose avec tes amis ?",
-        "Ça va dans tes amitiés ?",
-        "Quelque chose s'est passé avec un·e ami·e ?",
-        "C'est quoi avec tes potes ?",
-      ],
-      moyen: [
-        "Les conflits entre amis ça fait vraiment mal. Qu'est-ce qui s'est passé ?",
-        "Hey, une amitié ça se travaille des deux côtés. Qu'est-ce qui coince ?",
-        "Dis-moi ce qui s'est passé !",
-        "C'est quoi le problème avec cet·te ami·e ?",
-      ],
-      fort: [
-        "Une trahison d'ami·e... c'est vraiment douloureux. Je t'écoute.",
-        "Tu mérites des amis qui te respectent ! Qu'est-ce qui s'est passé ?",
-        "Woah, c'est dur ce que tu vis avec tes amis. Raconte-moi.",
-        "Cette blessure d'amitié... c'est récent ou ça s'accumule depuis longtemps ?",
-      ],
-    },
-
-    sante: {
-      faible: [
-        "Tu prends soin de toi physiquement ?",
-        "Comment tu te sens dans ton corps ?",
-        "La santé c'est la base ! Quelque chose te préoccupe ?",
-        "Ton corps envoie des signaux ?",
-      ],
-      moyen: [
-        "Hey, ton corps mérite d'être écouté ! Qu'est-ce qui se passe ?",
-        "Tu te fais aider si c'est nécessaire ?",
-        "Prendre soin de soi c'est pas égoïste, c'est indispensable !",
-        "T'en as parlé à quelqu'un de qualifié ?",
-      ],
-      fort: [
-        "Ce que tu décris c'est important, vraiment. Tu parles à quelqu'un ?",
-        "Hey, ta santé est ta priorité numéro 1 ! N'hésite pas à chercher de l'aide.",
-        "Je t'entends. Et je pense que tu devrais en parler à quelqu'un qui peut vraiment t'aider.",
-        "Ce que tu vis mérite une vraie aide. T'as accès à ça ?",
-      ],
-    },
-
     estime: {
-      faible: [
-        "Tu doutes de toi là ? Qu'est-ce qui se passe ?",
-        "Hey, t'es plus capable que tu le penses ! Qu'est-ce qui se passe ?",
-        "D'où ça vient ce doute sur toi-même ?",
+      etudes: [
+        "Quand l'estime de soi prend un coup à cause des études, on finit vite par confondre difficulté et valeur personnelle. Tu sens que c'est ce qui t'arrive un peu ?",
+        "Je comprends. Si les études réveillent ce doute sur toi, qu'est-ce qui te fait te juger aussi durement ?",
       ],
-      moyen: [
-        "T'es dur·e avec toi-même là ! D'où ça vient ?",
-        "Hey, si un ami te disait ça sur lui, tu lui répondrais quoi ?",
-        "Cette petite voix qui te critique... elle dit quoi exactement ?",
-        "T'as toujours été comme ça avec toi-même ou c'est récent ?",
+      travail: [
+        "Quand on doute de soi au travail ou en stage, tout peut vite devenir lourd. C'est surtout la peur de mal faire ou le sentiment de ne pas être à la hauteur ?",
+        "D'accord. Si c'est lié au travail, qu'est-ce qui attaque le plus ta confiance en toi ?",
       ],
-      fort: [
-        "Woah, tu te descends vraiment... Qu'est-ce qui se passe vraiment derrière ça ?",
-        "Hey, tu mérites autant de douceur que tu en donnes aux autres !",
-        "Cette image de toi-même là... elle vient d'où ? On a construit ça ensemble ?",
-        "Tu mérites d'être vu·e pour ce que tu es vraiment. Pas cette image-là.",
+      general: [
+        "Qu'est-ce qui te fait te voir comme ça aujourd'hui ?",
+        "Tu ressens ça depuis longtemps ou c'est plus fort en ce moment ?",
       ],
     },
-
+    famille: {
+      famille: [
+        "Quand ça coince avec la famille, on ne peut pas juste mettre ça de côté facilement. C'est une tension du moment ou quelque chose qui dure ?",
+        "Je comprends. Avec la famille, ce n'est jamais 'juste un détail'. Qu'est-ce qui te fait le plus souffrir dans cette situation ?",
+      ],
+      general: [
+        "Tu veux me dire ce qui se passe avec eux ?",
+        "C'est récent ou c'est quelque chose qui s'accumule ?",
+      ],
+    },
+    amitie: {
+      amitie: [
+        "Quand une amitié commence à faire mal, ça secoue vraiment. C'est une dispute, une distance, ou une vraie déception ?",
+        "Je vois. Si ça touche un·e ami·e, qu'est-ce qui te blesse le plus : ce qui a été dit, fait, ou l'absence de l'autre ?",
+      ],
+      general: [
+        "Tu veux me raconter ce qu'il s'est passé avec cette personne ?",
+        "Tu te sens déçu·e, blessé·e, ou juste perdu·e dans cette relation ?",
+      ],
+    },
+    amour: {
+      amour: [
+        "Quand quelqu'un prend autant de place, il y a souvent beaucoup d'émotions mélangées. Tu te sens surtout attiré·e, rassuré·e, ou un peu chamboulé·e ?",
+        "Je comprends. Si ça touche une relation ou un crush, tu veux me dire où tu en es avec cette personne ?",
+      ],
+      general: [
+        "Tu veux m'en dire un peu plus sur cette personne ?",
+        "C'est quelque chose de réciproque ou encore flou ?",
+      ],
+    },
+    sante: {
+      sante: [
+        "Quand la santé ou le corps prennent autant de place, ça peut vite devenir envahissant. Tu veux me dire ce qui t'inquiète le plus ?",
+        "Je comprends. Si ça touche à ta santé, le plus important c'est de ne pas minimiser. Qu'est-ce qui te préoccupe exactement ?",
+      ],
+      general: [
+        "Tu veux m'expliquer ce qu'il se passe pour toi physiquement ou mentalement ?",
+        "Tu as déjà pu en parler à quelqu'un de qualifié ?",
+      ],
+    },
     identite: {
-      faible: [
-        "T'es en train de te chercher un peu ?",
-        "Des questions sur toi-même t'occupent ?",
-        "Dis-moi ce qui se passe !",
+      identite: [
+        "Ce genre de questionnement prend souvent du temps et peut être très intense. Qu'est-ce qui te questionne le plus aujourd'hui ?",
+        "Je comprends. Quand on se cherche, ce n'est pas toujours simple à mettre en mots. Tu veux essayer de m'en dire un peu plus ?",
       ],
-      moyen: [
-        "Ces questions d'identité... t'en parles à des gens autour de toi ?",
-        "Se chercher c'est normal et parfois intense ! Comment tu le vis ?",
-        "C'est quoi le truc qui te questionne le plus là ?",
-        "T'as des gens autour de toi qui te comprennent là-dedans ?",
-      ],
-      fort: [
-        "Ces questionnements profonds... c'est beaucoup à porter seul·e. Je suis là.",
-        "Tu mérites un espace pour être qui tu es sans jugement.",
-        "Ce chemin que tu traverses... t'as quelqu'un pour t'accompagner ?",
+      general: [
+        "Qu'est-ce qui te questionne le plus en ce moment ?",
+        "Tu as un espace où tu peux explorer ça sans jugement ?",
       ],
     },
-
-    neutre: {
-      faible: [
-        "Yo ! Comment tu vas aujourd'hui ?",
-        "Hey ! Raconte-moi ta journée !",
-        "Qu'est-ce qui se passe pour toi ?",
-        "Dis-moi tout !",
-        "C'est quoi ton mood là ?",
+    joie: {
+      projet: [
+        "Si c'est lié à ton projet, tu dois sûrement ressentir un mélange de fierté et de soulagement. C'est plutôt lequel qui domine ?",
+        "Ah, je comprends mieux. Ton projet compte vraiment pour toi. Tu es surtout fier·e du résultat, ou soulagé·e que ça avance bien ?",
       ],
-      moyen: [
-        "Je suis là ! Qu'est-ce qui t'amène ?",
-        "Parle-moi ! Je t'écoute.",
-        "Qu'est-ce qui occupe ton esprit en ce moment ?",
-        "Il y a quelque chose sur le coeur ?",
+      etudes: [
+        "Si ça touche aux cours ou à un exam, ça doit faire du bien de sentir que ça avance enfin. Tu te sens surtout fier·e ou rassuré·e ?",
+        "Ah, d'accord. Une bonne nouvelle côté études, ça peut vraiment alléger l'esprit. Qu'est-ce qui te fait le plus plaisir dans tout ça ?",
       ],
-      fort: [
-        "Hey, je sens qu'il y a quelque chose. Dis-moi !",
-        "Je suis là, vraiment. Qu'est-ce qui se passe ?",
-        "Allez, tu peux tout me dire !",
-        "Je sens que c'est important. Dis-moi.",
+      travail: [
+        "Ah, je comprends. Quand ça va mieux côté boulot ou stage, ça peut faire un vrai poids en moins. Tu te sens surtout soulagé·e ou fier·e ?",
+        "D'accord, je vois mieux. Si c'est lié au travail, ça doit compter pour toi. Qu'est-ce qui te rend le plus heureux·se là-dedans ?",
+      ],
+      general: [
+        "Tu veux me raconter ce qui t'a fait du bien aujourd'hui ?",
+        "Qu'est-ce qui t'apporte cette bonne énergie ?",
       ],
     },
+    confusion: {
+      general: [
+        "Qu'est-ce qui te semble le plus confus ou embrouillé en ce moment ?",
+        "Tu peux me dire ce qui te fait perdre tes repères ?",
+      ],
+    },
+    frustration: {
+      general: [
+        "Qu'est-ce qui te frustre le plus dans cette situation ?",
+        "Tu peux me dire ce qui te bloque ou t'agace autant ?",
+      ],
+    },
+    ennui: {
+      general: [
+        "Qu'est-ce qui te semble le plus ennuyeux ou démotivant ?",
+        "Tu peux me dire ce qui te fait sentir que tout est fade ?",
+      ],
+    },
+    espoir: {
+      general: [
+        "Qu'est-ce qui te donne cet espoir ou cette confiance ?",
+        "Tu peux me raconter ce qui te fait voir les choses positivement ?",
+      ],
+    },
+    peur: {
+      general: [
+        "Qu'est-ce qui te fait le plus peur dans cette situation ?",
+        "Tu peux me dire ce qui t'effraie autant ?",
+      ],
+    },
+    culpabilite: {
+      general: [
+        "Qu'est-ce qui te fait te sentir aussi coupable ?",
+        "Tu peux me dire ce qui te pèse autant sur la conscience ?",
+      ],
+    },
+    jalousie: {
+      general: [
+        "Qu'est-ce qui te rend aussi jaloux·se ?",
+        "Tu peux me dire ce qui te fait ressentir cette injustice ?",
+      ],
+    },
+  };
 
-    gratitude: [
-      "Avec plaisir !! C'est pour ça que je suis là !",
-      "Hey, c'est toi qui es fort·e ! Je fais juste t'écouter.",
-      "De rien !! Reviens quand tu veux !",
-      "Trop contente d'avoir pu t'aider !!",
+  const SOCIAL_RESPONSES = {
+    doux: {
+      greeting: [
+        "Coucou. Je suis là. Comment tu vas ?",
+        "Salut toi. Comment tu te sens aujourd'hui ?",
+        "Bonjour. Je suis contente de te voir. Comment ça va ?",
+      ],
+      small_talk_positive: [
+        "Ohhh, trop bien alors.",
+        "Ça fait plaisir à entendre.",
+        "Trop bien. Qu'est-ce qui te met dans cet état ?",
+      ],
+      small_talk_neutral: [
+        "D'accord, je suis là.",
+        "Je vois. Tu veux m'en dire un peu plus ?",
+        "Okay. Comment tu te sens vraiment ?",
+      ],
+      thanks: [
+        "Avec plaisir. Je suis là pour toi.",
+        "De rien, ça me fait plaisir.",
+        "Tu peux revenir quand tu veux.",
+      ],
+    },
+    sage: {
+      greeting: [
+        "Bonjour. Comment vas-tu aujourd'hui ?",
+        "Salut. Je suis là si tu veux parler.",
+        "Bonjour. Comment tu te sens ?",
+      ],
+      small_talk_positive: [
+        "Ah, tant mieux alors.",
+        "Je suis content·e de l'entendre.",
+        "Très bien. Qu'est-ce qui te fait du bien aujourd'hui ?",
+      ],
+      small_talk_neutral: [
+        "D'accord.",
+        "Je vois. Tu veux développer un peu ?",
+        "Très bien, je t'écoute.",
+      ],
+      thanks: [
+        "Avec plaisir.",
+        "De rien. Reviens quand tu veux.",
+        "Je suis là si tu en as besoin.",
+      ],
+    },
+    energique: {
+      greeting: [
+        "Heyyy ! Comment tu vas ?",
+        "Salut toi !! Dis-moi comment ça va.",
+        "Yo ! Je suis là, raconte-moi.",
+      ],
+      small_talk_positive: [
+        "Aaaah trop bien !!",
+        "Mais oui, trop cool !!",
+        "Trop bien, qu'est-ce qui te met comme ça ?",
+      ],
+      small_talk_neutral: [
+        "Okayy.",
+        "Ça marche. Tu veux m'en dire plus ?",
+        "Je suis là, vas-y.",
+      ],
+      thanks: [
+        "Avec plaisir !!",
+        "Normal, je suis là pour ça !",
+        "Reviens quand tu veux !!",
+      ],
+    },
+  };
+
+  const MICRO_ACTIONS = {
+    stress: [
+      "On peut faire simple : c'est quoi l'unique truc à gérer en premier ?",
+      "Essaie de nommer une seule priorité pour les 10 prochaines minutes.",
+      "On peut découper ça en tout petits morceaux si tu veux.",
     ],
-
-    remerciement: [
-      "De rien !! T'as vu, on a géré ça ensemble !",
-      "Avec plaisir ! T'es super courageux·se de parler de tout ça.",
-      "Hey, c'est normal ! Je suis là pour ça.",
-      "C'est toi qui as fait le plus dur — parler. Bravo !",
+    anxiete: [
+      "Regarde autour de toi et essaie de nommer 3 choses que tu vois.",
+      "Tu peux essayer une longue expiration, juste une, maintenant.",
+      "On revient à l'instant présent : qu'est-ce qui est vraiment en train de se passer là, tout de suite ?",
     ],
-
-    bonjour: [
-      "HEYYY !! Je suis trop content·e que tu sois là ! Comment tu vas ?",
-      "Oh, te voilà ! Dis-moi tout ! Comment tu vas ?",
-      "Bonjour bonjour !! Qu'est-ce qui se passe pour toi aujourd'hui ?",
-      "YO ! Content·e de te voir ! Comment ça va ?",
+    tristesse: [
+      "Tu peux peut-être te faire un mini geste doux là maintenant : eau, plaid, pause, message à quelqu'un.",
+      "Même un tout petit geste de réconfort compte déjà.",
+      "Si tu peux, rapproche-toi de quelque chose ou quelqu'un de rassurant.",
     ],
-
-    aurevoir: [
-      "À bientôt !! T'as géré comme un chef aujourd'hui !",
-      "Au revoir !! Reviens quand tu veux, je serai là !",
-      "Ciao !! Prends soin de toi et bonne continuation !",
-      "À bientôt !! T'es trop courageux·se de parler de tout ça.",
+    fatigue: [
+      "Est-ce que tu peux t'accorder une vraie micro-pause, même 5 minutes ?",
+      "Même enlever une seule exigence aujourd'hui, c'est déjà énorme.",
+      "Ton corps mérite peut-être qu'on baisse un peu le rythme.",
     ],
-
-    incompris: [
-      "Hmm, j'ai pas tout suivi ! Tu peux m'expliquer autrement ?",
-      "Développe ! Je veux comprendre.",
-      "Attends... dis-moi en plus !",
-      "Je veux vraiment comprendre ! Tu peux reformuler ?",
-      "Je suis perdu·e là ! Explique-moi autrement.",
+    etudes: [
+      "On peut choisir une seule mini tâche pour relancer la machine.",
+      "Faire petit maintenant vaut mieux que vouloir tout porter d'un coup.",
+      "Tu peux commencer par le plus court ou le plus urgent, juste un seul.",
     ],
-  },
-};
+    colere: [
+      "Avant de répondre ou d'agir, prendre un peu de distance peut éviter que ça explose encore plus.",
+      "Tu peux essayer d'écrire ce que tu ressens sans l'envoyer à personne, juste pour sortir la pression.",
+      "On peut déjà identifier ce qui t'a blessé·e ou dépassé·e exactement.",
+    ],
+    solitude: [
+      "S'il y a une personne un peu sûre dans ta vie, même un petit message peut compter.",
+      "Parfois juste créer un mini contact aide déjà à casser le sentiment d'isolement.",
+      "Tu n'as pas besoin d'un grand discours, juste un petit lien peut déjà aider.",
+    ],
+    confusion: [
+      "Essaie de noter une seule chose que tu sais clairement, juste pour te raccrocher à un repère.",
+      "On peut commencer par identifier un petit détail concret dans ce qui t'embrouille.",
+      "Prends une respiration et essaie de formuler une seule question claire.",
+    ],
+    frustration: [
+      "Essaie de reformuler ce qui te frustre en une phrase simple, sans jugement.",
+      "On peut identifier un tout petit pas que tu pourrais faire pour avancer un peu.",
+      "Prends un instant pour noter ce qui serait idéal, même si c'est loin.",
+    ],
+    ennui: [
+      "Essaie de trouver une toute petite chose qui t'intéresse un minimum, même si c'est minuscule.",
+      "On peut chercher un petit changement dans ta routine pour casser la monotonie.",
+      "Rappelle-toi d'une chose que tu aimais faire avant, et vois si tu peux la faire en mini version.",
+    ],
+    peur: [
+      "Essaie de nommer ta peur en une phrase courte, pour la rendre moins vague.",
+      "On peut identifier une petite action sécurisante que tu peux faire maintenant.",
+      "Rappelle-toi d'une fois où tu as surmonté une peur, même petite.",
+    ],
+    culpabilite: [
+      "Essaie de te rappeler que tout le monde fait des erreurs, et que ça ne définit pas qui tu es.",
+      "On peut identifier une petite chose que tu pourrais faire pour te sentir un peu mieux avec ça.",
+      "Parle-toi comme tu parlerais à un·e ami·e qui traverse la même chose.",
+    ],
+    jalousie: [
+      "Essaie de reconnaître ce que tu admires chez l'autre, sans te comparer.",
+      "On peut identifier une petite chose que tu peux cultiver pour toi-même.",
+      "Rappelle-toi que chacun·e a son chemin, et que la comparaison n'aide pas vraiment.",
+    ],
+  };
 
-// ============================================================
-// MOTEUR DE DETECTION
-// ============================================================
+  const TRANSITIONS = {
+    doux: {
+      worsening: [
+        "J'ai l'impression que c'est plus lourd que tout à l'heure.",
+        "On dirait que ça monte encore un peu.",
+      ],
+      improving: [
+        "J'ai l'impression que ça redescend un petit peu.",
+        "On dirait qu'il y a un peu plus d'air qu'avant.",
+      ],
+      repeating: [
+        "Je vois que ce sujet revient beaucoup pour toi.",
+        "On tourne encore autour de cette même douleur, on dirait.",
+      ],
+    },
+    sage: {
+      worsening: [
+        "J'ai l'impression que l'intensité augmente par rapport à tout à l'heure.",
+        "On dirait que ça prend plus de place qu'au début de notre échange.",
+      ],
+      improving: [
+        "J'ai l'impression que ça s'apaise légèrement.",
+        "On dirait qu'il y a un petit déplacement, peut-être un peu de recul.",
+      ],
+      repeating: [
+        "Je remarque que ce thème revient plusieurs fois.",
+        "On reste sur quelque chose d'important pour toi, visiblement.",
+      ],
+    },
+    energique: {
+      worsening: [
+        "Ok, je sens que ça monte encore là.",
+        "On dirait que c'est plus intense que tout à l'heure.",
+      ],
+      improving: [
+        "Je sens que ça redescend un peu.",
+        "On dirait qu'il y a un peu plus d'espace qu'au début.",
+      ],
+      repeating: [
+        "Ok, je vois que ce sujet revient fort.",
+        "On tourne encore autour du même truc, on dirait.",
+      ],
+    },
+  };
 
-const KEYWORDS = {
-  stress: ["stress","stressé","stresse","pression","sous pression","overwhelm","débordé","déborde","submergé","trop","charge","surcharge","craque","craquer","bout","épuisé par le boulot"],
-  tristesse: ["triste","tristesse","pleure","pleurer","sanglot","chagrin","peine","douleur","malheureux","malheureuse","cafard","déprimé","déprime","vide","sombre","gris","mélancolie","mélancolique"],
-  joie: ["content","contente","heureux","heureuse","joie","joyeux","joyeuse","super","génial","géniale","trop bien","cool","incroyable","magnifique","formidable","bonheur","chanceux","chanceuse","réussi","réussie","fier","fière"],
-  fatigue: ["fatigué","fatiguée","épuisé","épuisée","crevé","crevée","nuit","dormi","sommeil","repos","recharger","vide","énergie","manque d'énergie","pas dormi","insomnie","burnout"],
-  solitude: ["seul","seule","solitude","isolé","isolée","personne","manque","vide","incompris","incomprise","invisible","oublié","oubliée","personne me comprend","personne m'écoute"],
-  anxiete: ["anxieux","anxieuse","angoisse","angoisser","inquiet","inquiète","peur","paniqué","paniquée","appréhension","rumination","tourner","tête","nuit blanche","cauchemar","oppression","panique","vertige"],
-  colere: ["colère","énervé","énervée","furieux","furieuse","rage","frustré","frustrée","injuste","injustice","agacé","agacée","irrité","irritée","exaspéré","exaspérée","marre","en rogne","hors de moi"],
-  amour: ["amoureux","amoureuse","amour","crush","flirt","kiffer","kiffe","fréquenter","sortir avec","relation","coup de coeur","séduire","plaire","sentiment","coeur","attirance"],
-  rupture: ["rupture","séparation","séparé","séparée","break up","quitter","quitté","quittée","ex","plus ensemble","c'est fini","fini entre nous","larme","pleurer pour","manque de","cœur brisé","brisé le cœur"],
-  etudes: ["école","cours","examen","exam","bac","fac","université","prof","devoir","révisions","réviser","notes","copie","concours","brevet","lycée","stage","mémoire","thèse","devoirs"],
-  famille: ["famille","parent","parents","mère","père","maman","papa","frère","soeur","sœur","grand-parent","grands-parents","oncle","tante","cousin","cousine","chez moi","maison","foyer","beau-père","belle-mère"],
-  amitie: ["ami","amie","amis","amies","pote","copain","copine","groupe","bande","trahison","conflit","dispute","réconcilier","meilleur ami","meilleure amie","BFF","fâché","fâchée"],
-  sante: ["santé","malade","maladie","médecin","docteur","hôpital","douleur physique","corps","symptôme","mal","traitement","médicament","opération","burnout","corps"],
-  estime: ["nul","nulle","incapable","pas assez bien","honte","honteux","honteuse","pas capable","je vaux rien","mauvais","mauvaise","raté","ratée","échec","pas à la hauteur","déçu de moi","déçue de moi","me déteste"],
-  identite: ["qui je suis","mon identité","genre","sexualité","orientation","lgbt","trans","non-binaire","perdu·e dans ma tête","je me comprends pas","me trouver","cherche qui je suis","bi","gay","lesbienne","queer"],
-  gratitude: ["merci","reconnaissant","reconnaissante","gratitude","touchant","ça m'a aidé","tu m'as aidé","tu aides"],
-  remerciement: ["merci beaucoup","grand merci","je te remercie","c'était bien","super aide","vraiment merci"],
-  bonjour: ["bonjour","salut","coucou","hello","hey","bonsoir","yo","wesh"],
-  aurevoir: ["au revoir","bye","à bientôt","ciao","à plus","bonne nuit","bonne soirée","bonne journée","à demain"],
-};
+  const NO_META_TRANSITIONS = [
+    "joie",
+    "bonjour",
+    "aurevoir",
+    "gratitude",
+    "remerciement",
+    "amour",
+    "espoir",
+  ];
 
-const INTENSITY_WORDS = {
-  faible: ["un peu","légèrement","parfois","vaguement","quelque peu","de temps en temps"],
-  moyen: ["assez","pas mal","vraiment","beaucoup","souvent","assez souvent","plutôt"],
-  fort: ["vraiment trop","completement","totalement","à fond","tellement","plus","je craque","j'en peux plus","je n'en peux plus","je peux plus","au bout","épuisé","effondr","plus du tout","trop trop","insupportable","horrible","terrible"],
-};
-
-const detectCategory = (text) => {
-  const lower = text.toLowerCase();
-  let scores = {};
-  for (const [cat, words] of Object.entries(KEYWORDS)) {
-    scores[cat] = 0;
-    for (const w of words) {
-      if (lower.includes(w)) scores[cat]++;
-    }
-  }
-  const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
-  if (sorted[0][1] === 0) return "neutre";
-  return sorted[0][0];
-};
-
-const detectIntensity = (text) => {
-  const lower = text.toLowerCase();
-  for (const w of INTENSITY_WORDS.fort) {
-    if (lower.includes(w)) return "fort";
-  }
-  for (const w of INTENSITY_WORDS.moyen) {
-    if (lower.includes(w)) return "moyen";
-  }
-  return "faible";
-};
-
-const usedResponses = {};
-
-const getResponse = (style, category, intensity) => {
-  const pool = RESPONSES[style];
-  if (!pool) return null;
-
-  let responses;
-
-  if (["gratitude","remerciement","bonjour","aurevoir","incompris"].includes(category)) {
-    responses = pool[category];
-  } else {
-    const cat = pool[category] || pool.neutre;
-    responses = cat[intensity] || cat.moyen || cat.faible || Object.values(cat)[0];
-  }
-
-  if (!responses || responses.length === 0) {
-    const neutre = pool.neutre || pool.incompris;
-    responses = Array.isArray(neutre) ? neutre : neutre.faible || neutre.moyen;
-  }
-
-  const key = `${style}_${category}_${intensity}`;
-  if (!usedResponses[key]) usedResponses[key] = [];
-
-  let available = responses.filter((_, i) => !usedResponses[key].includes(i));
-  if (available.length === 0) {
-    usedResponses[key] = [];
-    available = responses;
-  }
-
-  const idx = Math.floor(Math.random() * available.length);
-  const actualIdx = responses.indexOf(available[idx]);
-  usedResponses[key].push(actualIdx);
-
-  return responses[actualIdx];
-};
-
-const conversationContext = {
-  lastCategory: null,
-  lastIntensity: null,
-  messageCount: 0,
-  askedQuestion: false,
-};
-
-const FOLLOW_UPS = {
-  doux: [
-    "Et toi dans tout ça, comment tu prends soin de toi ?",
-    "Est-ce que tu as quelqu'un à qui parler de tout ça ?",
-    "Comment tu te sens maintenant qu'on en a parlé ?",
-    "Y a-t-il quelque chose qui pourrait t'aider là maintenant ?",
-    "Qu'est-ce qui t'aiderait le plus en ce moment ?",
-    "Tu te donnes le droit de ressentir tout ça ?",
-  ],
-  sage: [
-    "Qu'est-ce que tu pourrais faire, concrètement, pour aller un peu mieux ?",
-    "Comment tu as géré ce genre de situation dans le passé ?",
-    "Est-ce qu'il y a quelque chose que tu peux changer, même un petit peu ?",
-    "Qu'est-ce qui est en ton pouvoir là maintenant ?",
-    "Qu'est-ce que tu aurais envie de dire à quelqu'un qui vivrait la même chose ?",
-    "Est-ce qu'il y a quelqu'un à qui tu pourrais parler de tout ça ?",
-  ],
-  energique: [
-    "Hey, c'est quoi la prochaine étape pour toi ?",
-    "T'as quelqu'un sur qui tu peux compter autour de toi ?",
-    "C'est quoi une petite chose que tu pourrais faire aujourd'hui pour aller mieux ?",
-    "Comment tu te sens là, maintenant ?",
-    "T'as déjà vécu quelque chose de similaire et tu t'en es sorti·e ?",
-    "Qu'est-ce qui t'aiderait là, maintenant ?",
-  ],
-};
-
-const shouldAskFollowUp = () => {
-  return conversationContext.messageCount > 0 &&
-    conversationContext.messageCount % 3 === 0 &&
-    !conversationContext.askedQuestion;
-};
-
-const getFollowUp = (style) => {
-  const pool = FOLLOW_UPS[style] || FOLLOW_UPS.doux;
-  return pool[Math.floor(Math.random() * pool.length)];
-};
-
-// ============================================================
-// ÉTAT DE L'APP
-// ============================================================
-let familierKey = "plume";
-let familierImagePath = "/familiers/plume.png";
-let familierName = "Plume";
-let familierStyle = "doux";
-
-const familierAvatarMsg = document.getElementById("familierAvatarMsg");
-const welcomeText = document.getElementById("welcomeText");
-const messagesContainer = document.getElementById("messagesContainer");
-const messageInput = document.getElementById("messageInput");
-const sendButton = document.getElementById("sendButton");
-const typingIndicator = document.getElementById("typingIndicator");
-
-// ============================================================
-// CHARGEMENT DU FAMILIER
-// ============================================================
-const loadFamilier = async () => {
-  if (!pb.authStore.isValid || !pb.authStore.model) return;
-  try {
-    const user = await pb.collection("users").getOne(pb.authStore.model.id);
-    const raw = (user.familier || "plume").toString().toLowerCase();
-    familierKey = FAMILIERS_CONFIG[raw] ? raw : "plume";
-    const config = FAMILIERS_CONFIG[familierKey];
-    familierStyle = config.style;
-
-    let customisation = user.customisation || {};
-    if (typeof customisation === "string") {
-      try { customisation = JSON.parse(customisation); } catch { customisation = {}; }
+  const getTransition = (style, trend, emotion, topic) => {
+    if (NO_META_TRANSITIONS.includes(emotion)) return "";
+    if (
+      ![
+        "stress",
+        "tristesse",
+        "anxiete",
+        "fatigue",
+        "solitude",
+        "rupture",
+        "famille",
+        "amitie",
+        "estime",
+        "colere",
+        "confusion",
+        "frustration",
+        "ennui",
+        "peur",
+      ].includes(emotion)
+    ) {
+      return "";
     }
 
-    familierImagePath = config.images[0];
-    if (customisation?.variantId) {
-      const idx = parseInt(customisation.variantId.split("_")[1], 10) - 1;
-      familierImagePath = config.images[idx] || config.images[0];
+    const packs = TRANSITIONS[style] || TRANSITIONS.doux;
+
+    if (trend === "worsening") return pickRandom(packs.worsening);
+    if (trend === "improving") return pickRandom(packs.improving);
+    if (isSameThemeRepeating(emotion, topic)) return pickRandom(packs.repeating);
+
+    return "";
+  };
+
+  // ============================================================
+  // SÉLECTIONS
+  // ============================================================
+  const usedResponses = new Set();
+
+  const uniquePick = (pool, keyPrefix = "generic") => {
+    if (!pool || !pool.length) return "";
+
+    const available = pool.filter(
+      (_, index) => !usedResponses.has(`${keyPrefix}_${index}`)
+    );
+
+    if (!available.length) {
+      [...usedResponses]
+        .filter((key) => key.startsWith(`${keyPrefix}_`))
+        .forEach((key) => usedResponses.delete(key));
+      return uniquePick(pool, keyPrefix);
     }
 
-    familierName = config.name;
+    const choice = pickRandom(available);
+    const index = pool.indexOf(choice);
+    usedResponses.add(`${keyPrefix}_${index}`);
+    return choice;
+  };
 
-    if (familierAvatarMsg) {
-      familierAvatarMsg.src = familierImagePath;
-      familierAvatarMsg.alt = familierName;
+  const getValidation = (style, intensity) => {
+    const pack = STYLE_VOICE[style] || STYLE_VOICE.doux;
+    return uniquePick(
+      pack.validation[intensity] || pack.validation.faible,
+      `${style}_validation_${intensity}`
+    );
+  };
+
+  const getGenericReformulation = (emotion) =>
+    uniquePick(
+      GENERIC_REFORMULATIONS[emotion] || GENERIC_REFORMULATIONS.neutre,
+      `generic_${emotion}`
+    );
+
+  const getCelebrationLine = (eventType, topic) => {
+    const branch = CONTEXTUAL_CELEBRATIONS[eventType];
+    if (!branch) return "";
+    const pool = branch[topic] || branch.general || [];
+    return uniquePick(pool, `celebrate_${eventType}_${topic}`);
+  };
+
+  const getDeepenLine = (emotion, topic) => {
+    const branch = CONTEXTUAL_DEEPEN[emotion];
+    if (!branch) return "";
+    const pool = branch[topic] || branch.general || [];
+    return uniquePick(pool, `deepen_${emotion}_${topic}`);
+  };
+
+  const getSocialReply = (style, eventType, valence) => {
+    const pack = SOCIAL_RESPONSES[style] || SOCIAL_RESPONSES.doux;
+
+    if (eventType === "greeting") {
+      return uniquePick(pack.greeting, `${style}_greeting`);
     }
-    if (welcomeText) {
-      const welcomes = {
-        doux: `Coucou ! Je suis ${familierName} et je suis là pour toi. 🌟 Comment tu vas aujourd'hui ?`,
-        sage: `Bonjour ! Je suis ${familierName}. Je suis là pour t'écouter. Comment tu vas ?`,
-        energique: `HEYYY ! Je suis ${familierName} et je suis trop content·e que tu sois là !! Comment tu vas ?!`,
-      };
-      welcomeText.textContent = welcomes[familierStyle] || welcomes.doux;
+
+    if (eventType === "thanks") {
+      return uniquePick(pack.thanks, `${style}_thanks`);
     }
-  } catch (err) {
-    console.error("Erreur chargement familier:", err);
-  }
-};
 
-// ============================================================
-// UI
-// ============================================================
-const appendMessage = (text, isUser, isCrisis = false) => {
-  const emptyState = messagesContainer.querySelector(".text-center");
-  if (emptyState) emptyState.remove();
+    if (valence === "positive") {
+      return uniquePick(pack.small_talk_positive, `${style}_small_positive`);
+    }
 
-  const div = document.createElement("div");
-  div.className = `chat ${isUser ? "chat-end" : "chat-start"}`;
+    return uniquePick(pack.small_talk_neutral, `${style}_small_neutral`);
+  };
 
-  if (!isUser) {
-    const imageDiv = document.createElement("div");
-    imageDiv.className = "chat-image";
-    const avatar = document.createElement("img");
-    avatar.src = familierImagePath;
-    avatar.alt = familierName;
-    avatar.className = "w-10 h-10 object-contain";
-    imageDiv.appendChild(avatar);
-    div.appendChild(imageDiv);
-  }
+  const getMicroAction = (emotion, topic) => {
+    const pool = MICRO_ACTIONS[emotion] || MICRO_ACTIONS[topic];
+    if (!pool) return "";
+    return uniquePick(pool, `micro_${emotion || topic}`);
+  };
 
-  const bubble = document.createElement("div");
-  bubble.className = `chat-bubble ${isUser ? "chat-bubble-accent" : isCrisis ? "chat-bubble-warning" : "chat-bubble-secondary"}`;
-  bubble.textContent = text;
-  div.appendChild(bubble);
+  // ============================================================
+  // CONSTRUCTION RÉPONSE
+  // ============================================================
+  const buildResponse = ({
+    style,
+    emotion,
+    topic,
+    valence,
+    intensity,
+    eventType,
+    strategy,
+    trend,
+  }) => {
+    const validation = getValidation(style, intensity);
+    const transition = getTransition(style, trend, emotion, topic);
+    const cheer = uniquePick(
+      (STYLE_VOICE[style] || STYLE_VOICE.doux).cheer,
+      `${style}_cheer`
+    );
+    const generic = getGenericReformulation(emotion);
+    const deepen = getDeepenLine(emotion, topic);
+    const celebration = getCelebrationLine(eventType, topic);
+    const action = getMicroAction(emotion, topic);
 
-  // Lien cliquable vers le 3114 si crise
-  if (isCrisis) {
-    const link = document.createElement("a");
-    link.href = "tel:3114";
-    link.className = "btn btn-warning btn-sm mt-2 w-full";
-    link.textContent = "📞 Appeler le 3114 maintenant";
-    div.appendChild(link);
-  }
+    const clarifyFallbacks = {
+      joie: "Tu veux me dire ce qui te met comme ça aujourd'hui ?",
+      tristesse: "Tu veux me dire ce qui te pèse le plus ?",
+      stress: "Qu'est-ce qui te met le plus sous pression là maintenant ?",
+      anxiete: "Qu'est-ce qui tourne le plus dans ta tête ?",
+      fatigue: "Tu sens que c'est surtout ton corps, ta tête, ou les deux ?",
+      colere: "Qu'est-ce qui t'a fait monter aussi fort ?",
+      solitude: "C'est surtout un manque de présence ou de compréhension ?",
+      amour: "Tu veux m'en dire un peu plus sur cette personne ?",
+      rupture: "Le plus dur pour toi, c'est quoi là maintenant ?",
+      etudes: "Qu'est-ce qui est le plus lourd dans tes études en ce moment ?",
+      famille: "Qu'est-ce qui te touche le plus dans cette situation ?",
+      amitie: "Qu'est-ce qui te fait le plus mal dans cette relation ?",
+      sante: "Tu veux me dire ce qui t'inquiète le plus ?",
+      estime: "Qu'est-ce qui te fait te parler aussi durement à toi-même ?",
+      identite: "Qu'est-ce qui te questionne le plus en ce moment ?",
+      confusion: "Qu'est-ce qui te semble le plus confus ou embrouillé ?",
+      frustration: "Qu'est-ce qui te frustre le plus dans cette situation ?",
+      ennui: "Qu'est-ce qui te semble le plus ennuyeux ou démotivant ?",
+      espoir: "Qu'est-ce qui te donne cet espoir ou cette confiance ?",
+      peur: "Qu'est-ce qui te fait le plus peur dans cette situation ?",
+      culpabilite: "Qu'est-ce qui te fait te sentir aussi coupable ?",
+      jalousie: "Qu'est-ce qui te rend aussi jaloux·se ?",
+      neutre: "Tu veux m'en dire un peu plus ?",
+    };
 
-  messagesContainer.appendChild(div);
-  requestAnimationFrame(() => {
-    document.getElementById("messagesEnd")?.scrollIntoView({ behavior: "smooth" });
+    if (strategy === "social_reply") {
+      return sentenceCase(getSocialReply(style, eventType, valence));
+    }
+
+    if (strategy === "celebrate_light") {
+      return sentenceCase(
+        joinParts(
+          cheer,
+          generic,
+          clarifyFallbacks.joie
+        )
+      );
+    }
+
+    if (strategy === "celebrate_with_context") {
+      return sentenceCase(
+        joinParts(
+          cheer,
+          celebration || generic
+        )
+      );
+    }
+
+    if (strategy === "contextual_follow_up") {
+      return sentenceCase(
+        joinParts(
+          transition,
+          validation,
+          celebration || deepen || generic
+        )
+      );
+    }
+
+    if (strategy === "validate_and_deepen") {
+      return sentenceCase(
+        joinParts(
+          transition,
+          validation,
+          deepen || generic
+        )
+      );
+    }
+
+    if (strategy === "validate_and_clarify") {
+      return sentenceCase(
+        joinParts(
+          transition,
+          validation,
+          generic,
+          clarifyFallbacks[emotion] || clarifyFallbacks.neutre
+        )
+      );
+    }
+
+    if (strategy === "clarify") {
+      return sentenceCase(
+        joinParts(
+          validation,
+          "J'aimerais bien comprendre un peu mieux ce que tu traverses.",
+          clarifyFallbacks[emotion] || clarifyFallbacks.neutre
+        )
+      );
+    }
+
+    if (strategy === "problem_solve") {
+      return sentenceCase(
+        joinParts(
+          transition,
+          validation,
+          generic,
+          "On peut essayer de prendre ça une chose à la fois.",
+          action
+        )
+      );
+    }
+
+    if (strategy === "support_then_action") {
+      return sentenceCase(
+        joinParts(
+          transition,
+          validation,
+          generic,
+          action
+        )
+      );
+    }
+
+    if (strategy === "soothe") {
+      return sentenceCase(
+        joinParts(
+          transition,
+          validation,
+          generic,
+          style === "energique"
+            ? "On ralentit un peu, juste un instant, d'accord ?"
+            : style === "sage"
+            ? "On peut revenir à quelque chose de concret, ici et maintenant."
+            : "On va essayer de revenir doucement à maintenant."
+        )
+      );
+    }
+
+    if (strategy === "soothe_then_problem_solve") {
+      return sentenceCase(
+        joinParts(
+          transition,
+          validation,
+          generic,
+          style === "energique"
+            ? "On va éviter de tout porter d'un coup."
+            : style === "sage"
+            ? "Il n'y a pas besoin de tout résoudre d'un seul mouvement."
+            : "Tu n'as pas besoin de tout porter en une seule fois.",
+          action
+        )
+      );
+    }
+
+    return sentenceCase(
+      joinParts(
+        transition,
+        validation,
+        generic,
+        clarifyFallbacks[emotion] || clarifyFallbacks.neutre
+      )
+    );
+  };
+
+  // ============================================================
+  // ÉTAT UI
+  // ============================================================
+  let familierKey = "plume";
+  let familierImagePath = "/familiers/plume.png";
+  let familierName = "Plume";
+  let familierStyle = "doux";
+
+  const familierAvatarMsg = document.getElementById("familierAvatarMsg");
+  const welcomeText = document.getElementById("welcomeText");
+  const messagesContainer = document.getElementById("messagesContainer");
+  const messageInput = document.getElementById("messageInput");
+  const sendButton = document.getElementById("sendButton");
+  const typingIndicator = document.getElementById("typingIndicator");
+  const chatFooter = document.getElementById("chatFooter");
+
+  const applyCrisisVisualMode = (enabled = false) => {
+    if (!chatFooter) return;
+
+    if (enabled) {
+      chatFooter.classList.add("border-warning");
+      chatFooter.classList.add("bg-base-100");
+    } else {
+      chatFooter.classList.remove("border-warning");
+      chatFooter.classList.remove("bg-base-100");
+    }
+  };
+
+  const appendMessage = (text, isUser, isCrisis = false) => {
+    const div = document.createElement("div");
+    div.className = `chat ${isUser ? "chat-end" : "chat-start"}`;
+
+    if (!isUser) {
+      const imageDiv = document.createElement("div");
+      imageDiv.className = "chat-image";
+
+      const avatar = document.createElement("img");
+      avatar.src = familierImagePath;
+      avatar.alt = familierName;
+      avatar.className = "w-10 h-10 object-contain";
+
+      imageDiv.appendChild(avatar);
+      div.appendChild(imageDiv);
+    }
+
+    const bubble = document.createElement("div");
+    bubble.className = `chat-bubble ${
+      isUser
+        ? "chat-bubble-accent"
+        : isCrisis
+        ? "chat-bubble-warning"
+        : "chat-bubble-secondary"
+    }`;
+    bubble.textContent = text;
+    div.appendChild(bubble);
+
+    if (isCrisis) {
+      const actions = document.createElement("div");
+      actions.className = "flex flex-col gap-2 mt-2 w-full";
+
+      const callLink = document.createElement("a");
+      callLink.href = "tel:3114";
+      callLink.className = "btn btn-warning btn-sm w-full";
+      callLink.textContent = "📞 Appeler le 3114 maintenant";
+
+      const emergencyNote = document.createElement("p");
+      emergencyNote.className = "text-xs opacity-80";
+      emergencyNote.textContent =
+        "Si tu es en danger immédiat, appelle aussi les secours ou une personne de confiance près de toi.";
+
+      actions.appendChild(callLink);
+      actions.appendChild(emergencyNote);
+      div.appendChild(actions);
+    }
+
+    messagesContainer.appendChild(div);
+
+    requestAnimationFrame(() => {
+      document
+        .getElementById("messagesEnd")
+        ?.scrollIntoView({ behavior: "smooth" });
+    });
+  };
+
+  const showTyping = (inputText = "") => {
+    const length = inputText.length;
+    const mood =
+      length < 25
+        ? `${familierName} écrit...`
+        : length < 90
+        ? `${familierName} réfléchit un peu...`
+        : `${familierName} prend le temps de te répondre...`;
+
+    typingIndicator.textContent = mood;
+  };
+
+  const hideTyping = () => {
+    typingIndicator.textContent = "";
+  };
+
+  // ============================================================
+  // CHARGEMENT FAMILIER
+  // ============================================================
+  const loadFamilier = async () => {
+    if (!pb.authStore.isValid || !pb.authStore.model) return;
+
+    try {
+      const user = await pb.collection("users").getOne(pb.authStore.model.id);
+      const raw = (user.familier || "plume").toString().toLowerCase();
+      familierKey = FAMILIERS_CONFIG[raw] ? raw : "plume";
+
+      const config = FAMILIERS_CONFIG[familierKey];
+      familierStyle = config.style;
+
+      let customisation = user.customisation || {};
+      if (typeof customisation === "string") {
+        try {
+          customisation = JSON.parse(customisation);
+        } catch {
+          customisation = {};
+        }
+      }
+
+      familierImagePath = config.images[0];
+
+      if (customisation?.variantId) {
+        const match = customisation.variantId.match(/_(\d+)/);
+        if (match) {
+          const idx = parseInt(match[1], 10) - 1;
+          familierImagePath = config.images[idx] || config.images[0];
+        }
+      }
+
+      familierName = config.name;
+
+      if (familierAvatarMsg) {
+        familierAvatarMsg.src = familierImagePath;
+        familierAvatarMsg.alt = familierName;
+      }
+
+      if (welcomeText) {
+        const welcomes = {
+          doux: `Coucou ! Je suis ${familierName} et je suis là pour toi. 🌟 Comment tu vas aujourd'hui ?`,
+          sage: `Bonjour ! Je suis ${familierName}. Je suis là pour t'écouter. Comment vas-tu aujourd'hui ?`,
+          energique: `HEYYY ! Je suis ${familierName} et je suis trop content·e que tu sois là !! Comment tu vas ?`,
+        };
+        welcomeText.textContent = welcomes[familierStyle] || welcomes.doux;
+      }
+    } catch (err) {
+      console.error("Erreur chargement familier :", err);
+    }
+  };
+
+  // ============================================================
+  // GÉNÉRATION
+  // ============================================================
+  const generateResponse = (userText) => {
+    const crisisType = detectCrisis(userText);
+
+    if (crisisType === "crise" || crisisType === "automutilation") {
+      const response = getCrisisResponse(crisisType, familierStyle);
+      rememberAssistantMessage(response, {
+        strategy: "urgence",
+        emotion: crisisType,
+        intensity: "fort",
+      });
+      return { text: response, isCrisis: true };
+    }
+
+    const { emotion, scores } = detectEmotion(
+      userText,
+      conversationContext.lastEmotion
+    );
+
+    const intensity = detectIntensity(userText, scores);
+    const topic = detectTopic(userText);
+    const eventType = detectEventType(userText, emotion);
+    const valence = detectValence(emotion, userText, eventType);
+    const intent = detectIntent(userText, emotion, eventType);
+    const causeLevel = detectCauseLevel(userText);
+    const trend = getMoodTrend();
+    const isAnswerToPrevious = isLikelyAnswerToPrevious(userText);
+
+    updateConversationMemory({
+      text: userText,
+      emotion,
+      intensity,
+      topic,
+      eventType,
+      valence,
+      intent,
+      causeLevel,
+    });
+
+    if (crisisType === "detresse") {
+      const response = getCrisisResponse("detresse", familierStyle);
+      rememberAssistantMessage(response, {
+        strategy: "apaiser",
+        emotion,
+        intensity,
+        topic,
+      });
+      return { text: response, isCrisis: false };
+    }
+
+    const strategy = chooseResponseStrategy({
+      emotion,
+      valence,
+      intensity,
+      topic,
+      eventType,
+      intent,
+      causeLevel,
+      trend,
+      isAnswerToPrevious,
+    });
+
+    const response = buildResponse({
+      style: familierStyle,
+      emotion,
+      topic,
+      valence,
+      intensity,
+      eventType,
+      strategy,
+      trend,
+    });
+
+    const finalText = response || "Je veux bien comprendre. Tu peux me l'expliquer autrement ?";
+
+    conversationContext.lastMode = strategy;
+
+    rememberAssistantMessage(finalText, {
+      strategy,
+      emotion,
+      intensity,
+      topic,
+      eventType,
+      valence,
+      intent,
+    });
+
+    return {
+      text: finalText,
+      isCrisis: false,
+    };
+  };
+
+  // ============================================================
+  // ENVOI
+  // ============================================================
+  const sendMessage = () => {
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    appendMessage(text, true);
+    applyCrisisVisualMode(false);
+
+    messageInput.value = "";
+    sendButton.disabled = true;
+    messageInput.disabled = true;
+
+    showTyping(text);
+
+    const normalized = normalizeText(text);
+    const baseDelay = 500;
+    const variableDelay = clamp(normalized.length * 14, 150, 1400);
+    const delay = baseDelay + variableDelay;
+
+    setTimeout(() => {
+      hideTyping();
+
+      const { text: responseText, isCrisis } = generateResponse(text);
+
+      if (isCrisis) {
+        applyCrisisVisualMode(true);
+      }
+
+      appendMessage(responseText, false, isCrisis);
+
+      sendButton.disabled = false;
+      messageInput.disabled = false;
+      messageInput.focus();
+    }, delay);
+  };
+
+  sendButton.addEventListener("click", sendMessage);
+
+  messageInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      sendMessage();
+    }
   });
-};
 
-const showTyping = () => {
-  typingIndicator.textContent = `${familierName} écrit...`;
-};
-
-const hideTyping = () => {
-  typingIndicator.textContent = "";
-};
-
-// ============================================================
-// LOGIQUE DE RÉPONSE
-// ============================================================
-const generateResponse = (userText) => {
-  // Détection prioritaire des crises
-  const crisisType = detectCrisis(userText);
-  if (crisisType) {
-    return { text: getCrisisResponse(crisisType, familierStyle), isCrisis: true };
-  }
-
-  const category = detectCategory(userText);
-  const intensity = detectIntensity(userText);
-
-  conversationContext.lastCategory = category;
-  conversationContext.lastIntensity = intensity;
-  conversationContext.messageCount++;
-
-  let response = getResponse(familierStyle, category, intensity);
-
-  if (shouldAskFollowUp() && !["bonjour","aurevoir","gratitude","remerciement"].includes(category)) {
-    const followUp = getFollowUp(familierStyle);
-    response = response + " " + followUp;
-    conversationContext.askedQuestion = true;
-  } else {
-    conversationContext.askedQuestion = false;
-  }
-
-  return { text: response || getResponse(familierStyle, "incompris", "faible"), isCrisis: false };
-};
-
-const sendMessage = () => {
-  const text = messageInput.value.trim();
-  if (!text) return;
-
-  appendMessage(text, true);
-  messageInput.value = "";
-  sendButton.disabled = true;
-
-  const delay = 600 + Math.random() * 800;
-  showTyping();
-
-  setTimeout(() => {
-    hideTyping();
-    const { text: responseText, isCrisis } = generateResponse(text);
-    appendMessage(responseText, false, isCrisis);
-    sendButton.disabled = false;
-    messageInput.focus();
-  }, delay);
-};
-
-sendButton.addEventListener("click", sendMessage);
-messageInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    sendMessage();
-  }
-});
-
-loadFamilier();
+  loadFamilier();
 </script>
