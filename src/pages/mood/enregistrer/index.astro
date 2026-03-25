@@ -242,6 +242,21 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
       </div>
 
       <div
+        class="bg-info/10 border-2 border-info/30 rounded-4xl shadow-md p-6 space-y-2"
+      >
+        <h3 class="text-center">Comment gagner des points</h3>
+        <p class="text-center text-sm">
+          +1 point pour le mood du jour
+        </p>
+        <p class="text-center text-sm">
+          +3 points bonus tous les 7 jours consecutifs (7, 14, 21...)
+        </p>
+        <p class="text-center text-xs opacity-80">
+          Mettre a jour ton mood du jour ne donne pas de points supplementaires.
+        </p>
+      </div>
+
+      <div
         class="bg-success/10 border-2 border-success/30 rounded-4xl shadow-md p-6 space-y-2"
       >
         <h3 class="text-center">Félicitations !</h3>
@@ -288,6 +303,9 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
   const submitButton = document.getElementById("submitButton");
   const moodDetailInput = document.getElementById("moodDetailInput");
   const moodDetailChips = document.querySelectorAll(".mood-detail-chip");
+  const DAILY_MOOD_POINTS = 1;
+  const STREAK_TARGET_DAYS = 7;
+  const STREAK_BONUS_POINTS = 3;
   let selectedMoodDetails = [];
 
   const getTodayRangeIso = () => {
@@ -323,6 +341,61 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
       filter: `user = "${userId}" && created >= "${startIso}" && created <= "${endIso}"`,
       sort: "-created",
     });
+  };
+
+  const awardDailyMoodPoint = async (userId) => {
+    const getUtcDateKey = (dateLike) => {
+      const date = new Date(dateLike);
+      if (Number.isNaN(date.getTime())) {
+        return "";
+      }
+      return date.toISOString().slice(0, 10);
+    };
+
+    const countConsecutiveMoodDays = (moods) => {
+      const dayKeys = new Set(
+        moods.map((item) => getUtcDateKey(item.created)).filter(Boolean),
+      );
+
+      const cursor = new Date();
+      cursor.setUTCHours(0, 0, 0, 0);
+
+      let consecutiveDays = 0;
+      while (dayKeys.has(getUtcDateKey(cursor))) {
+        consecutiveDays += 1;
+        cursor.setUTCDate(cursor.getUTCDate() - 1);
+      }
+
+      return consecutiveDays;
+    };
+
+    const user = await pb.collection("users").getOne(userId);
+    const moods = await pb.collection("moods").getFullList({
+      filter: `user = "${userId}"`,
+      sort: "-created",
+    });
+
+    const streakDays = countConsecutiveMoodDays(moods);
+    const streakBonusPoints =
+      streakDays > 0 && streakDays % STREAK_TARGET_DAYS === 0
+        ? STREAK_BONUS_POINTS
+        : 0;
+    const totalAwarded = DAILY_MOOD_POINTS + streakBonusPoints;
+
+    const currentPoints = Number(user.points);
+    const safePoints =
+      Number.isFinite(currentPoints) && currentPoints >= 0 ? currentPoints : 0;
+
+    await pb.collection("users").update(userId, {
+      points: safePoints + totalAwarded,
+    });
+
+    return {
+      streakDays,
+      dailyPoints: DAILY_MOOD_POINTS,
+      streakBonusPoints,
+      totalAwarded,
+    };
   };
 
   const loadTodayMood = async () => {
@@ -446,6 +519,7 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
 
       let savedMood = null;
       let isUpdate = false;
+      let pointAwardResult = null;
 
       if (cachedTodayMood?.id) {
         isUpdate = true;
@@ -454,6 +528,16 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
           .update(cachedTodayMood.id, payload);
       } else {
         savedMood = await pb.collection("moods").create(payload);
+
+        // Reward only when creating the first mood of the day.
+        try {
+          pointAwardResult = await awardDailyMoodPoint(userId);
+        } catch (pointsErr) {
+          console.error(
+            "Mood enregistre, mais erreur de gain de points:",
+            pointsErr,
+          );
+        }
       }
 
       const persistedMoodDetails = (savedMood.mood_details || "")
@@ -482,9 +566,17 @@ import LayoutProtege from "../../../layouts/LayoutProtege.astro";
 
       cachedTodayMood = savedMood;
 
-      message.textContent = isUpdate
-        ? "✨ Mood mis a jour avec succes !"
-        : "✨ Mood enregistre avec succes !";
+      if (isUpdate) {
+        message.textContent = "✨ Mood mis a jour avec succes !";
+      } else {
+        if (pointAwardResult?.streakBonusPoints) {
+          message.textContent = `✨ Mood enregistre avec succes ! +${pointAwardResult.dailyPoints} point, bonus serie +${pointAwardResult.streakBonusPoints} (${pointAwardResult.streakDays} jours)`;
+        } else if (pointAwardResult?.dailyPoints) {
+          message.textContent = `✨ Mood enregistre avec succes ! +${pointAwardResult.dailyPoints} point gagne`;
+        } else {
+          message.textContent = "✨ Mood enregistre avec succes !";
+        }
+      }
       message.className = "text-center text-sm font-semibold text-success";
 
       // Rediriger vers l'accueil après 1.5s

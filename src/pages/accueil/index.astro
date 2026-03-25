@@ -75,10 +75,16 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
       <div class="space-y-3">
         <div class="flex justify-between items-baseline">
           <h3 class="text-left">Progression</h3>
-          <p class="text-sm">
-            <span id="moodCount" class="font-bold text-accent">0</span>
-            <span class="opacity-70">/10 moods</span>
-          </p>
+          <div class="text-right">
+            <p class="text-sm">
+              <span id="moodCount" class="font-bold text-accent">0</span>
+              <span class="opacity-70">/10 moods</span>
+            </p>
+            <p class="text-xs opacity-80">
+              <span id="pointsCount" class="font-bold text-accent">0</span>
+              <span> points</span>
+            </p>
+          </div>
         </div>
 
         <progress
@@ -116,9 +122,9 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
     >
       <div class="flex items-center justify-between gap-4">
         <div class="flex-1">
-          <h2 class="text-left mb-1">Ressource d'accompagnement</h2>
+          <h2 class="text-left mb-1">Ressources d'accompagnement</h2>
           <p class="text-sm text-left opacity-80">
-            Outils et conseils bien-etre
+            Outils et conseils bien-être
           </p>
         </div>
         <div class="text-4xl">→</div>
@@ -136,6 +142,7 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
   const familierNameInStatus = document.getElementById("familierNameInStatus");
   const progressStatus = document.getElementById("progressStatus");
   const moodCount = document.getElementById("moodCount");
+  const pointsCount = document.getElementById("pointsCount");
   const moodProgress = document.getElementById("moodProgress");
   const moodCardTitle = document.getElementById("moodCardTitle");
   const moodCardSubtitle = document.getElementById("moodCardSubtitle");
@@ -325,6 +332,13 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
     const user = await getCurrentUser();
     if (!user) {
       return;
+    }
+
+    const parsedPoints = Number(user.points);
+    const safePoints =
+      Number.isFinite(parsedPoints) && parsedPoints >= 0 ? parsedPoints : 0;
+    if (pointsCount) {
+      pointsCount.textContent = String(safePoints);
     }
 
     try {
