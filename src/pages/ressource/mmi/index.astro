@@ -1,0 +1,115 @@
+---
+import LayoutProtege from "../../../layouts/LayoutProtege.astro";
+import Bouton from "../../../components/Bouton.astro";
+---
+
+<LayoutProtege
+  nomPage="Contacts et services de ton ecole"
+  titre_page="Contacts et services de ton ecole"
+  intro_page="Les bons interlocuteurs au bon moment"
+>
+  <div class="w-full max-w-md mx-auto space-y-6">
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-3"
+    >
+      <h2 class="text-left">A faire chaque semaine</h2>
+      <p class="text-left">- Verifier la plateforme de cours</p>
+      <p class="text-left">- Consulter la messagerie de promo</p>
+      <p class="text-left">- Controler les dates de rendu</p>
+    </div>
+
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-3"
+    >
+      <h2 class="text-left">Scolarite</h2>
+      <p class="text-left">
+        Pour les absences, justificatifs et emploi du temps.
+      </p>
+      <p class="text-left text-sm">
+        <span class="font-bold">Mail:</span> elodie.chartogne@univ-fcomte.fr
+      </p>
+      <p class="text-left text-sm">
+        <span class="font-bold">Lettre:</span> Ecrire une lettre manuscrite
+      </p>
+    </div>
+
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-3"
+    >
+      <h2 class="text-left mb-4">Equipe pedagogique MMI</h2>
+      <p class="text-left">
+        Pour les questions de cours, projets, rattrapages et orientation.
+      </p>
+      <p class="text-left text-sm">
+        <span class="font-bold"
+          >Secrétariat:
+        </span>elodie.chartogne@univ-fcomte.fr
+      </p>
+      <p class="text-left text-sm">
+        <span class="font-bold"
+          >Directeur des études:
+        </span>xavier.senente@univ-fcomte.fr
+      </p>
+    </div>
+
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-3"
+    >
+      <h2 class="text-left mb-4">Service de Santé Étudiante SSE</h2>
+      <p class="text-left">
+        Pour stress, fatigue, difficultes personnelles ou besoin d'ecoute.
+      </p>
+      <p class="text-left text-sm">
+        <span class="font-bold">Mail: </span>sse-montbeliard@univ-fcomte.fr
+      </p>
+      <p class="text-left text-sm">
+        <span class="font-bold">Tel:</span> 07 85 64 01 60
+      </p>
+    </div>
+
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-2"
+    >
+      <h2 class="text-left">Conseil</h2>
+      <p class="text-left">
+        N'hesite pas a contacter ces services des que tu en ressens le besoin.
+        Ils sont la pour t'aider et te soutenir dans ta vie d'etudiant.
+      </p>
+    </div>
+
+    <div
+      class="bg-error/15 border-2 border-error/40 rounded-4xl shadow-md p-6 space-y-2"
+    >
+      <h2 class="text-left">En cas d'urgence</h2>
+      <p class="text-left">
+        Si tu es en danger immediat, appelle tout de suite.
+      </p>
+      <p class="text-left">
+        <span class="font-bold">SAMU:</span>
+        <a class="link text-error-content" href="tel:15">15</a>
+        (urgence medicale)
+      </p>
+      <p class="text-left">
+        <span class="font-bold">Numero d'urgence europeen:</span>
+        <a class="link text-error-content" href="tel:112">112</a>
+      </p>
+      <p class="text-left">
+        <span class="font-bold">Detresse psychologique:</span>
+        <a class="link text-error-content" href="tel:3114">3114</a>
+        (24h/24, 7j/7, gratuit)
+      </p>
+      <p class="text-left">
+        Si parler au telephone est difficile, rapproche-toi d'un adulte de
+        confiance ou d'un service de ton ecole tout de suite.
+      </p>
+    </div>
+
+    <div class="flex justify-center">
+      <Bouton
+        text="Retour aux ressources"
+        url="/ressource/index.html"
+        variant="beige"
+      />
+    </div>
+  </div>
+</LayoutProtege>

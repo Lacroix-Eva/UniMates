@@ -1,0 +1,357 @@
+---
+import LayoutProtege from "../../../layouts/LayoutProtege.astro";
+import Bouton from "../../../components/Bouton.astro";
+---
+
+<LayoutProtege
+  nomPage="Exercices de respirations"
+  titre_page="Exercices de respirations"
+  intro_page="Prends 2 minutes pour respirer"
+>
+  <div class="w-full max-w-md mx-auto space-y-6">
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-3"
+    >
+      <h2 class="text-left">Technique 4-4-6</h2>
+      <p class="text-left">
+        Inspire 4 secondes, bloque 4 secondes, puis expire 6 secondes.
+      </p>
+      <p class="text-left">
+        Fais 6 cycles complets en te concentrant uniquement sur ta respiration.
+      </p>
+    </div>
+
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-5"
+    >
+      <div class="text-center space-y-1">
+        <h2 id="breathPhaseLabel" class="text-center">Inspire</h2>
+        <p id="breathTimer" class="text-3xl font-bold">4s</p>
+        <p id="breathCycle" class="text-sm opacity-80">Cycle 0/6</p>
+      </div>
+
+      <div class="flex justify-center">
+        <div id="breathOrb" class="breath-orb phase-inhale">
+          <img
+            id="breathFamilierImage"
+            src="/familiers/plume.png"
+            alt="Ton familier"
+            class="w-36 h-36 object-contain"
+          />
+        </div>
+      </div>
+
+      <p id="breathHint" class="text-center text-sm opacity-80">
+        Laisse ton familier respirer avec toi.
+      </p>
+
+      <div class="flex items-center justify-center gap-3">
+        <button
+          id="breathToggle"
+          type="button"
+          class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-base py-2 px-6 border-2 rounded-4xl shadow-md transition-all duration-300 ease-in-out transform bg-base-100 active:bg-info cursor-pointer"
+        >
+          Demarrer
+        </button>
+        <button
+          id="breathReset"
+          type="button"
+          class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-base py-2 px-6 border-2 rounded-4xl shadow-md transition-all duration-300 ease-in-out transform bg-base-100 active:bg-info cursor-pointer"
+        >
+          Reinitialiser
+        </button>
+      </div>
+    </div>
+
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-2"
+    >
+      <h2>Astuce</h2>
+      <p class="text-left">
+        Pose une main sur le ventre: si elle monte a l'inspiration, tu respires
+        profondement.
+      </p>
+    </div>
+    <div class="flex justify-center">
+      <Bouton
+        text="Retour aux ressources"
+        url="/ressource/index.html"
+        variant="beige"
+      />
+    </div>
+  </div>
+</LayoutProtege>
+
+<style>
+  .breath-orb {
+    width: clamp(16rem, 72vw, 22rem);
+    height: clamp(16rem, 72vw, 22rem);
+    border-radius: 9999px;
+    border: 2px solid hsl(var(--b3));
+    background: radial-gradient(
+      circle at 30% 30%,
+      hsl(var(--p) / 0.28),
+      hsl(var(--b1))
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: box-shadow 220ms ease;
+  }
+
+  .phase-inhale {
+    animation: inhalePulse 4s linear infinite;
+  }
+
+  .phase-hold {
+    animation: holdPulse 4s linear infinite;
+  }
+
+  .phase-exhale {
+    animation: exhalePulse 6s linear infinite;
+  }
+
+  @keyframes inhalePulse {
+    from {
+      transform: scale(0.86);
+      box-shadow: 0 0 0 0 hsl(var(--p) / 0.2);
+    }
+    to {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 20px hsl(var(--p) / 0);
+    }
+  }
+
+  @keyframes holdPulse {
+    from {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 12px hsl(var(--p) / 0.16);
+    }
+    to {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 12px hsl(var(--p) / 0.16);
+    }
+  }
+
+  @keyframes exhalePulse {
+    from {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 12px hsl(var(--p) / 0.16);
+    }
+    to {
+      transform: scale(0.86);
+      box-shadow: 0 0 0 0 hsl(var(--p) / 0);
+    }
+  }
+</style>
+
+<script type="module" is:inline>
+  import pb from "/pocketbase/pb.js";
+
+  const familierImage = document.getElementById("breathFamilierImage");
+  const phaseLabel = document.getElementById("breathPhaseLabel");
+  const timerLabel = document.getElementById("breathTimer");
+  const cycleLabel = document.getElementById("breathCycle");
+  const hintLabel = document.getElementById("breathHint");
+  const orb = document.getElementById("breathOrb");
+  const toggleBtn = document.getElementById("breathToggle");
+  const resetBtn = document.getElementById("breathReset");
+
+  const variants = {
+    plume: [
+      "/familiers/plume.png",
+      "/familiers/plume2.png",
+      "/familiers/plume3.png",
+      "/familiers/plume4.png",
+      "/familiers/plume5.png",
+      "/familiers/plume6.png",
+      "/familiers/plume7.png",
+    ],
+    sunny: [
+      "/familiers/sunny.png",
+      "/familiers/sunny2.png",
+      "/familiers/sunny3.png",
+      "/familiers/sunny4.png",
+      "/familiers/sunny5.png",
+      "/familiers/sunny6.png",
+      "/familiers/sunny7.png",
+    ],
+    buzzy: [
+      "/familiers/buzzy.png",
+      "/familiers/buzzy2.png",
+      "/familiers/buzzy3.png",
+      "/familiers/buzzy4.png",
+      "/familiers/buzzy5.png",
+      "/familiers/buzzy6.png",
+      "/familiers/buzzy7.png",
+    ],
+  };
+
+  const normalizeFamilierKey = (rawValue) => {
+    const raw = (rawValue || "").toString().trim().toLowerCase();
+    const aliases = {
+      plum: "plume",
+      plume: "plume",
+      sunny: "sunny",
+      buzzy: "buzzy",
+    };
+    return aliases[raw] || "plume";
+  };
+
+  const parseCustomisation = (customisationRaw) => {
+    if (!customisationRaw) {
+      return {};
+    }
+
+    if (typeof customisationRaw === "string") {
+      try {
+        const parsed = JSON.parse(customisationRaw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+
+    return typeof customisationRaw === "object" ? customisationRaw : {};
+  };
+
+  const resolveImagePath = (familierKey, customisationRaw) => {
+    const customisation = parseCustomisation(customisationRaw);
+    const list = variants[familierKey] || variants.plume;
+    const variantRaw =
+      customisation?.variantId ??
+      customisation?.selectedId ??
+      customisation?.variant;
+
+    if (variantRaw === undefined || variantRaw === null) {
+      return list[0];
+    }
+
+    const match = String(variantRaw).match(/(\d+)/);
+    const variantNumber = match ? parseInt(match[1], 10) : NaN;
+    if (!Number.isFinite(variantNumber) || variantNumber < 1) {
+      return list[0];
+    }
+
+    return list[variantNumber - 1] || list[0];
+  };
+
+  const loadFamilier = async () => {
+    if (!pb.authStore.isValid || !pb.authStore.model || !familierImage) {
+      return;
+    }
+
+    let user = pb.authStore.model;
+    try {
+      user = await pb.collection("users").getOne(user.id);
+    } catch (err) {
+      console.error("Erreur lors du chargement du profil:", err);
+    }
+
+    const key = normalizeFamilierKey(user.familier || "plume");
+    familierImage.src = resolveImagePath(
+      key,
+      user.customisation ||
+        pb.authStore?.model?.customisation ||
+        localStorage.getItem("customisation"),
+    );
+  };
+
+  const steps = [
+    { label: "Inspire", seconds: 4, phase: "phase-inhale" },
+    { label: "Bloque", seconds: 4, phase: "phase-hold" },
+    { label: "Expire", seconds: 6, phase: "phase-exhale" },
+  ];
+
+  const targetCycles = 6;
+  let running = false;
+  let currentStep = 0;
+  let timeLeft = steps[0].seconds;
+  let cycleCount = 0;
+  let intervalId = null;
+
+  const updateBreathUI = () => {
+    const step = steps[currentStep];
+    if (phaseLabel) phaseLabel.textContent = step.label;
+    if (timerLabel) timerLabel.textContent = `${timeLeft}s`;
+    if (cycleLabel)
+      cycleLabel.textContent = `Cycle ${cycleCount}/${targetCycles}`;
+    if (orb) {
+      orb.classList.remove("phase-inhale", "phase-hold", "phase-exhale");
+      orb.classList.add(step.phase);
+    }
+  };
+
+  const pauseSession = () => {
+    running = false;
+    if (intervalId) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+    if (toggleBtn) toggleBtn.textContent = "Reprendre";
+    if (hintLabel) hintLabel.textContent = "On reprend quand tu veux.";
+  };
+
+  const tick = () => {
+    if (!running) return;
+
+    timeLeft -= 1;
+    if (timeLeft > 0) {
+      updateBreathUI();
+      return;
+    }
+
+    if (currentStep === steps.length - 1) {
+      cycleCount += 1;
+    }
+
+    if (cycleCount >= targetCycles) {
+      pauseSession();
+      if (phaseLabel) phaseLabel.textContent = "Bravo";
+      if (timerLabel) timerLabel.textContent = "Termine";
+      if (hintLabel) {
+        hintLabel.textContent =
+          "Super. Tu as complete 6 cycles de respiration avec ton familier.";
+      }
+      return;
+    }
+
+    currentStep = (currentStep + 1) % steps.length;
+    timeLeft = steps[currentStep].seconds;
+    updateBreathUI();
+  };
+
+  const startSession = () => {
+    if (running) return;
+    running = true;
+    if (toggleBtn) toggleBtn.textContent = "Pause";
+    if (hintLabel) hintLabel.textContent = "Calque ton souffle sur le rythme.";
+    if (!intervalId) {
+      intervalId = setInterval(tick, 1000);
+    }
+  };
+
+  const resetSession = () => {
+    pauseSession();
+    currentStep = 0;
+    timeLeft = steps[0].seconds;
+    cycleCount = 0;
+    if (toggleBtn) toggleBtn.textContent = "Demarrer";
+    if (hintLabel)
+      hintLabel.textContent = "Laisse ton familier respirer avec toi.";
+    updateBreathUI();
+  };
+
+  toggleBtn?.addEventListener("click", () => {
+    if (running) {
+      pauseSession();
+    } else {
+      startSession();
+    }
+  });
+
+  resetBtn?.addEventListener("click", resetSession);
+
+  loadFamilier();
+  updateBreathUI();
+</script>

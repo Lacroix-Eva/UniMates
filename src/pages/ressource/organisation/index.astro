@@ -1,0 +1,129 @@
+---
+import LayoutProtege from "../../../layouts/LayoutProtege.astro";
+import Bouton from "../../../components/Bouton.astro";
+---
+
+<LayoutProtege
+  nomPage="Organisation de travail"
+  titre_page="Organisation de travail"
+  intro_page="Mieux structurer ta semaine"
+>
+  <div class="w-full max-w-md mx-auto space-y-6">
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-3"
+    >
+      <h2 class="text-left">Methode 3 priorites</h2>
+      <p class="text-left">
+        Definis 3 taches importantes maximum pour la journee.
+      </p>
+      <p class="text-left">
+        Planifie des blocs de concentration de 25 a 45 minutes avec une courte
+        pause.
+      </p>
+    </div>
+
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-3"
+    >
+      <h2 class="text-left">Plan du jour</h2>
+      <div class="space-y-2">
+        <input
+          id="task1"
+          type="text"
+          placeholder="Priorite 1"
+          class="w-full bg-base-100 border-2 rounded-3xl px-4 py-2"
+        />
+        <input
+          id="task2"
+          type="text"
+          placeholder="Priorite 2"
+          class="w-full bg-base-100 border-2 rounded-3xl px-4 py-2"
+        />
+        <input
+          id="task3"
+          type="text"
+          placeholder="Priorite 3"
+          class="w-full bg-base-100 border-2 rounded-3xl px-4 py-2"
+        />
+      </div>
+      <p id="tasksSaved" class="text-center text-sm opacity-80">
+        Garde seulement l'essentiel pour avancer sereinement.
+      </p>
+      <div class="flex justify-center">
+        <button
+          id="saveTasksBtn"
+          type="button"
+          class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-base py-2 px-6 border-2 rounded-4xl shadow-md transition-all duration-300 ease-in-out transform bg-base-100 active:bg-info cursor-pointer"
+        >
+          Sauvegarder mes priorites
+        </button>
+      </div>
+    </div>
+
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-3"
+    >
+      <h2 class="text-left">Routine simple</h2>
+      <p class="text-left">
+        5 minutes de planification. <br/>5 minutes pour preparer demain.
+      </p>
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input type="checkbox" class="checkbox checkbox-sm mt-1" />
+        <span class="text-sm opacity-90"
+          >J'ai complete ma priorite principale</span
+        >
+      </label>
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input type="checkbox" class="checkbox checkbox-sm mt-1" />
+        <span class="text-sm opacity-90"
+          >J'ai note ma premiere action pour demain</span
+        >
+      </label>
+    </div>
+
+    <div class="flex justify-center">
+      <Bouton
+        text="Retour aux ressources"
+        url="/ressource/index.html"
+        variant="beige"
+      />
+    </div>
+  </div>
+</LayoutProtege>
+
+<script type="module" is:inline>
+  const TASKS_KEY = "organisation_tasks_v1";
+
+  const taskInputs = [
+    document.getElementById("task1"),
+    document.getElementById("task2"),
+    document.getElementById("task3"),
+  ];
+  const saveTasksBtn = document.getElementById("saveTasksBtn");
+  const tasksSaved = document.getElementById("tasksSaved");
+
+  const loadTasks = () => {
+    const saved = localStorage.getItem(TASKS_KEY);
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved);
+      taskInputs.forEach((input, index) => {
+        if (input) input.value = (parsed[index] || "").toString();
+      });
+    } catch {
+      // Ignore invalid localStorage payload.
+    }
+  };
+
+  const saveTasks = () => {
+    const values = taskInputs.map((input) => (input?.value || "").trim());
+    localStorage.setItem(TASKS_KEY, JSON.stringify(values));
+    if (tasksSaved) {
+      tasksSaved.textContent = "Priorites sauvegardees.";
+    }
+  };
+
+  saveTasksBtn?.addEventListener("click", saveTasks);
+
+  loadTasks();
+</script>

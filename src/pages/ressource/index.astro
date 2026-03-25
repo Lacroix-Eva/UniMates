@@ -30,7 +30,7 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
     </div>
 
     <a
-      href="#respiration"
+      href="/ressource/respiration/index.html"
       class="bg-gradient-custom block bg-base-300 border-2 rounded-4xl shadow-md p-6 transition-all duration-300 ease-in-out transform active:bg-info cursor-pointer"
     >
       <div class="flex items-center justify-between gap-4">
@@ -45,7 +45,7 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
     </a>
 
     <a
-      href="#anti-stress"
+      href="/ressource/anti-stress/index.html"
       class="bg-gradient-custom block bg-base-300 border-2 rounded-4xl shadow-md p-6 transition-all duration-300 ease-in-out transform active:bg-info cursor-pointer"
     >
       <div class="flex items-center justify-between gap-4">
@@ -60,7 +60,7 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
     </a>
 
     <a
-      href="#organisation"
+      href="/ressource/organisation/index.html"
       class="bg-gradient-custom block bg-base-300 border-2 rounded-4xl shadow-md p-6 transition-all duration-300 ease-in-out transform active:bg-info cursor-pointer"
     >
       <div class="flex items-center justify-between gap-4">
@@ -75,7 +75,7 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
     </a>
 
     <a
-      href="#mmi"
+      href="/ressource/mmi/index.html"
       class="bg-gradient-custom block bg-base-300 border-2 rounded-4xl shadow-md p-6 transition-all duration-300 ease-in-out transform active:bg-info cursor-pointer"
     >
       <div class="flex items-center justify-between gap-4">
@@ -90,56 +90,29 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
     </a>
 
     <div
-      id="respiration"
-      class="bg-base-300 border-2 rounded-4xl shadow-md p-6 space-y-2"
-    >
-      <h3 class="text-left">Exercices de respirations</h3>
-      <p class="text-sm opacity-80">
-        Essaie 4-4-6 : inspire 4 secondes, bloque 4 secondes, expire 6 secondes.
-        Recommence pendant 2 minutes.
-      </p>
-    </div>
-
-    <div
-      id="anti-stress"
-      class="bg-base-300 border-2 rounded-4xl shadow-md p-6 space-y-2"
-    >
-      <h3 class="text-left">Conseils anti-stress</h3>
-      <p class="text-sm opacity-80">
-        Coupe les notifications 30 minutes, fais une priorite, puis avance par
-        petites etapes.
-      </p>
-    </div>
-
-    <div
-      id="organisation"
-      class="bg-base-300 border-2 rounded-4xl shadow-md p-6 space-y-2"
-    >
-      <h3 class="text-left">Organisation de travail</h3>
-      <p class="text-sm opacity-80">
-        Planifie 3 taches importantes max par jour, avec des blocs de
-        concentration de 25 a 45 minutes.
-      </p>
-    </div>
-
-    <div
-      id="mmi"
-      class="bg-base-300 border-2 rounded-4xl shadow-md p-6 space-y-2"
-    >
-      <h3 class="text-left">Ressources MMI</h3>
-      <p class="text-sm opacity-80">
-        Pense a verifier vos plateformes de cours, votre messagerie et les
-        espaces de rendu de projets.
-      </p>
-    </div>
-
-    <div
       class="bg-error/15 border-2 border-error/40 rounded-4xl shadow-md p-6 space-y-2"
     >
-      <h3 class="text-left text-error">En cas d'urgence</h3>
-      <p class="text-sm opacity-90">
-        Si tu te sens en danger immediat, appelle le 15. Tu peux aussi contacter
-        le 3114 (numero national de prevention du suicide, 24h/24, 7j/7).
+      <h2 class="text-left">En cas d'urgence</h2>
+      <p class="text-left">
+        Si tu es en danger immediat, appelle tout de suite.
+      </p>
+      <p class="text-left">
+        <span class="font-bold">SAMU:</span>
+        <a class="link text-error-content" href="tel:15">15</a>
+        (urgence medicale)
+      </p>
+      <p class="text-left">
+        <span class="font-bold">Numero d'urgence europeen:</span>
+        <a class="link text-error-content" href="tel:112">112</a>
+      </p>
+      <p class="text-left">
+        <span class="font-bold">Detresse psychologique:</span>
+        <a class="link text-error-content" href="tel:3114">3114</a>
+        (24h/24, 7j/7, gratuit)
+      </p>
+      <p class="text-left">
+        Si parler au telephone est difficile, rapproche-toi d'un adulte de
+        confiance ou d'un service de ton ecole tout de suite.
       </p>
     </div>
   </div>
@@ -196,7 +169,7 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
 
   const familierMessages = {
     plume: "On avance doucement, une etape a la fois.",
-    sunny: "Je te propose des pistes simples pour t'organiser.",
+    sunny: "Je te propose des pistes simples pour avancer.",
     buzzy: "On remet de l'energie positive pas a pas.",
   };
 

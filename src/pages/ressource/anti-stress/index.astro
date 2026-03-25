@@ -1,0 +1,57 @@
+---
+import LayoutProtege from "../../../layouts/LayoutProtege.astro";
+import Bouton from "../../../components/Bouton.astro";
+---
+
+<LayoutProtege
+  nomPage="Conseils anti-stress"
+  titre_page="Conseils anti-stress"
+  intro_page="Des actions simples et concretes"
+>
+  <div class="w-full max-w-md mx-auto space-y-6">
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-3"
+    >
+      <h2 class="text-left">Plan anti-stress rapide (3 etapes)</h2>
+      <p class="text-left">1. Coupe les notifications pendant 30 minutes.</p>
+      <p class="text-left">2. Choisis une seule priorite maintenant.</p>
+      <p class="text-left">3. Avance par petites etapes de 10 a 15 minutes.</p>
+    </div>
+
+    <div
+      class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-3"
+    >
+      <h2 class="text-left">Checklist anti-stress</h2>
+      <label class="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" class="checkbox checkbox-sm mt-1" />
+        <span class="text-left">J'ai bu un verre d'eau</span>
+      </label>
+      <label class="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" class="checkbox checkbox-sm mt-1" />
+        <span class="text-left">Je me suis étiré 30 secondes</span>
+      </label>
+      <label class="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" class="checkbox checkbox-sm mt-1" />
+        <span class="text-left"
+          >J'ai defini ma prochaine micro-tache</span
+        >
+      </label>
+    </div>
+
+    <div class="bg-gradient-custom border-2 rounded-4xl shadow-md p-6 space-y-2">
+      <h2 class="text-left">Quand la pression revient</h2>
+      <p class="text-left">
+        Reviens au plan en 3 etapes. Le but n'est pas d'etre parfait, mais de
+        reduire la charge mentale tout de suite.
+      </p>
+    </div>
+
+    <div class="flex justify-center">
+      <Bouton
+        text="Retour aux ressources"
+        url="/ressource/index.html"
+        variant="beige"
+      />
+    </div>
+  </div>
+</LayoutProtege>
