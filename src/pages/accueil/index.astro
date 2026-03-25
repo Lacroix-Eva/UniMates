@@ -124,16 +124,6 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
         <div class="text-4xl">→</div>
       </div>
     </a>
-
-    <!-- Bouton déconnexion -->
-    <div class="flex justify-center">
-      <button
-        id="logoutButton"
-        class="inline-flex items-center justify-center text-base-content font-balsamiq-sans font-bold text-lg py-3 px-10 border-2 rounded-4xl shadow-md transition-all duration-300 ease-in-out transform bg-base-300 active:bg-info cursor-pointer"
-      >
-        Se déconnecter
-      </button>
-    </div>
   </div>
 </LayoutProtege>
 
@@ -387,12 +377,6 @@ import LayoutProtege from "../../layouts/LayoutProtege.astro";
         moodCardSubtitle.textContent = "Enregistre ton mood du jour";
     }
   };
-
-  const logoutButton = document.getElementById("logoutButton");
-  logoutButton.addEventListener("click", () => {
-    pb.authStore.clear();
-    window.location.href = "/";
-  });
 
   loadFamilier();
   loadInteractionsStatus();

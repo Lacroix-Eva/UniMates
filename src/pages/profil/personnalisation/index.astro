@@ -1,9 +1,12 @@
 ---
-import LayoutNeutreProtege from "../../layouts/LayoutNeutreProtege.astro";
-import Bouton from "../../components/Bouton.astro";
+import LayoutNeutreProtege from "../../../layouts/LayoutNeutreProtege.astro";
+import Bouton from "../../../components/Bouton.astro";
 ---
 
-<LayoutNeutreProtege nomPage="Personnalisation" titre_page="Personnalise ton profil">
+<LayoutNeutreProtege
+  nomPage="Personnalisation"
+  titre_page="Personnalise ton profil"
+>
   <div class="font-kantumruy-pro text-lg text-center">
     <span>Vos points disponibles:</span>
     <span id="pointsValue" class="font-bold">0</span>
@@ -25,7 +28,9 @@ import Bouton from "../../components/Bouton.astro";
 
       <div class="mt-4">
         <p>Sélectionne un accessoire.</p>
-        <p class="text-sm opacity-70">Les options verrouillées demandent des points.</p>
+        <p class="text-sm opacity-70">
+          Les options verrouillées demandent des points.
+        </p>
         <div id="options" class="mt-4 grid grid-cols-3 gap-3"></div>
       </div>
     </div>
@@ -39,14 +44,18 @@ import Bouton from "../../components/Bouton.astro";
       >
         Sauvegarder
       </button>
-      <Bouton text="Retour à l'accueil" url="/accueil/index.html" variant="jaune" />
+      <Bouton
+        text="Retour au profil"
+        url="/profil/index.html"
+        variant="jaune"
+      />
     </div>
   </section>
 
   <script type="module" is:inline>
     import pb from "/pocketbase/pb.js";
 
-    const DEFAULT_POINTS = 3;
+    const DEFAULT_POINTS = 0;
     const msg = document.getElementById("msg");
     const optionsContainer = document.getElementById("options");
     const pointsValue = document.getElementById("pointsValue");
@@ -184,7 +193,11 @@ import Bouton from "../../components/Bouton.astro";
         };
         const familierKey = familierKeyMap[rawFamilier] || "plume";
         state.familierKey = baseImages[familierKey] ? familierKey : "plume";
-        state.points = Number(user.points ?? DEFAULT_POINTS) || DEFAULT_POINTS;
+        const parsedPoints = Number(user.points);
+        state.points =
+          Number.isFinite(parsedPoints) && parsedPoints >= 0
+            ? parsedPoints
+            : DEFAULT_POINTS;
 
         let purchases = user.purchases || {};
         if (typeof purchases === "string") {
